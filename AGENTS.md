@@ -7,18 +7,17 @@
 ## Project Positioning
 
 - Platform repo: a collection of pure libraries with no runnable entry points (no `main`); each module can be published as a JAR independently.
-- To be organized as Maven multi-module; the root `pom.xml` will be reshaped into the parent pom (`packaging=pom`: aggregator + version/inheritance management, published to Maven Central for instance projects and third-party plugins to inherit from). Concrete directory names and the module breakdown are not finalized yet.
+- Organized as Maven multi-module, with modules as top-level directories (currently only `core/`). The parent pom (`packaging=pom`: aggregator + version/inheritance management, published to Maven Central for instance projects and third-party plugins to inherit from) is deliberately deferred until the module set settles.
 
 ## Environment & Commands
 
-Requirements: JDK 25+, mvnd (Maven Daemon); test framework JUnit 6.1.3 (test scope).
+Requirements: JDK 25+, mvnd (Maven Daemon); test framework JUnit 6.1.3 (test scope, version-managed via the `junit-bom` import).
 
 - Compile: `mvnd compile`
 - Run tests: `mvnd test`
-- Run the program: `java -cp target/classes tech.forethought.brick.Main` (compile first)
 
-(The commands above target the transitional root module; once submodules land, run them inside each module directory instead.)
+Run the commands inside each module directory (e.g., `cd core && mvnd test`).
 
 ## Transitional Status Quo
 
-The repository has only ever committed `LICENSE`; the current root `pom.xml` and `src/` are IDEA scaffolding doubling as a temporary template. Once submodules land, `src/` will be removed and the root `pom.xml` will become the parent pom.
+The root IDEA scaffolding (former `pom.xml` and `src/`) has been removed. `core/` is the first module, currently a standalone pom (not yet inheriting from a parent). `TextTransformer` in `core` is a placeholder contract that only validates the SPI machinery (service declarations, ServiceLoader discovery, contract test suites); it will be replaced by real contracts when the engine lands.
