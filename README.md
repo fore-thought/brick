@@ -1,6 +1,6 @@
 # Brick
 
-> An AI tool whose core idea is **extreme customizability**: a headless core plus hot-swappable JAR extensions. All frontends are equal instances — CLI, TUI, desktop, mobile, web; the first instance targets desktop.
+> AI graph engine libraries whose core idea is **extreme customizability**: a headless graph-engine core plus hot-swappable JAR extensions.
 
 This repository is the **platform repo** of the Brick project group: pure libraries with no runnable entry points; runnable instances (frontends) live in their own repositories. 中文版本见 [README.zh.md](README.zh.md)。
 
