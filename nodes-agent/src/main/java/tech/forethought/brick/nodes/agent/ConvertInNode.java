@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import tech.forethought.brick.core.event.EventKinds;
 import tech.forethought.brick.core.model.Message;
+import tech.forethought.brick.core.model.MessageCodec;
 import tech.forethought.brick.core.model.ProtocolResponse;
 import tech.forethought.brick.core.spi.EdgeKeys;
 import tech.forethought.brick.core.spi.Node;
@@ -42,6 +44,8 @@ public final class ConvertInNode implements Node {
         var adapter = context.services().require(ProtocolAdapter.class,
                 responses.getFirst().protocol());
         var assistantMessage = adapter.convertResponse(responses.stream());
+        context.events().emit(EventKinds.MESSAGE_APPENDED,
+                Map.of("message", MessageCodec.toMap(assistantMessage)));
         var history = new ArrayList<>(messages);
         history.add(assistantMessage);
         var out = new LinkedHashMap<>(input);

@@ -2,6 +2,7 @@ package tech.forethought.brick.nodes.agent;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import tech.forethought.brick.core.event.EventKinds;
 import tech.forethought.brick.core.model.ProtocolRequest;
 import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.NodeContext;
@@ -29,8 +30,16 @@ public final class CallNode implements Node {
                     "llm-call node: edge data is missing key 'protocolRequest'");
         }
         var adapter = context.services().require(ProtocolAdapter.class, request.protocol());
+        var events = context.events();
         var out = new LinkedHashMap<>(input);
-        out.put(AgentKeys.PROTOCOL_RESPONSES, adapter.call(request).toList());
+        out.put(AgentKeys.PROTOCOL_RESPONSES, adapter.call(request)
+                .peek(chunk -> {
+                    var delta = adapter.textDelta(chunk);
+                    if (!delta.isEmpty()) {
+                        events.emit(EventKinds.TOKEN_DELTA, Map.of("text", delta));
+                    }
+                })
+                .toList());
         return out;
     }
 }

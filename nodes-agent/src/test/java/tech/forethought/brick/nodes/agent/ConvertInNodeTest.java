@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import tech.forethought.brick.core.event.EventKinds;
 import tech.forethought.brick.core.mock.MockProtocolAdapter;
 import tech.forethought.brick.core.model.Message;
 import tech.forethought.brick.core.model.ProtocolResponse;
@@ -42,5 +43,13 @@ public final class ConvertInNodeTest extends NodeContractTest {
         assertEquals(2, messages.size());
         assertEquals(new Message.AssistantMessage("done", List.of()), messages.get(1));
         assertEquals(false, result.get(AgentKeys.HAS_TOOL_CALLS));
+    }
+
+    @Test
+    void emitsMessageAppended() {
+        subject().execute(sampleInput(), context());
+        var events = emittedEvents().events();
+        assertEquals(1, events.size());
+        assertEquals(EventKinds.MESSAGE_APPENDED, events.getFirst().kind());
     }
 }

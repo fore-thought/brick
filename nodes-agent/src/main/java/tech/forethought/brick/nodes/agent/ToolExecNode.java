@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import tech.forethought.brick.core.event.EventKinds;
 import tech.forethought.brick.core.model.Message;
+import tech.forethought.brick.core.model.MessageCodec;
 import tech.forethought.brick.core.spi.EdgeKeys;
 import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.NodeContext;
@@ -39,8 +41,11 @@ public final class ToolExecNode implements Node {
         var history = new ArrayList<>(messages);
         for (var call : last.toolCalls()) {
             var tool = context.services().require(Tool.class, call.toolName());
-            history.add(new Message.ToolResultMessage(call.id(),
-                    String.valueOf(tool.execute(call.arguments()))));
+            var result = new Message.ToolResultMessage(call.id(),
+                    String.valueOf(tool.execute(call.arguments())));
+            history.add(result);
+            context.events().emit(EventKinds.MESSAGE_APPENDED,
+                    Map.of("message", MessageCodec.toMap(result)));
         }
         var out = new LinkedHashMap<>(input);
         out.put(EdgeKeys.MESSAGES, List.copyOf(history));

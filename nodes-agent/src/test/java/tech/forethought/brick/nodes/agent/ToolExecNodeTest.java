@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import tech.forethought.brick.core.event.EventKinds;
 import tech.forethought.brick.core.mock.EchoTool;
 import tech.forethought.brick.core.model.Message;
 import tech.forethought.brick.core.model.ToolCall;
@@ -43,5 +44,13 @@ public final class ToolExecNodeTest extends NodeContractTest {
         assertEquals(3, messages.size());
         var toolResult = assertInstanceOf(Message.ToolResultMessage.class, messages.get(2));
         assertEquals("c1", toolResult.toolCallId());
+    }
+
+    @Test
+    void emitsMessageAppendedPerToolResult() {
+        subject().execute(sampleInput(), context());
+        assertEquals(1, emittedEvents().events().size());
+        assertEquals(EventKinds.MESSAGE_APPENDED,
+                emittedEvents().events().getFirst().kind());
     }
 }

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import tech.forethought.brick.core.event.EventEmitter;
 import tech.forethought.brick.core.mock.EchoTool;
 import tech.forethought.brick.core.model.Message;
 import tech.forethought.brick.core.spi.EdgeKeys;
@@ -26,7 +27,7 @@ public final class ContextPreprocessNodeTest extends NodeContractTest {
     void prependsSystemPromptOnce() {
         var node = new ContextPreprocessNode();
         var context = new NodeContext("run", "n", Map.of("systemPrompt", "be brief"),
-                new ManualServices());
+                new ManualServices(), EventEmitter.noop());
         var first = node.execute(Map.of(EdgeKeys.MESSAGES,
                 List.of(new Message.UserMessage("hi"))), context);
         var messages = (List<Message>) first.get(EdgeKeys.MESSAGES);
@@ -42,7 +43,8 @@ public final class ContextPreprocessNodeTest extends NodeContractTest {
     void resolvesToolDefinitionsByName() {
         var node = new ContextPreprocessNode();
         var services = new ManualServices().with(Tool.class, "echo", new EchoTool());
-        var context = new NodeContext("run", "n", Map.of("tools", List.of("echo")), services);
+        var context = new NodeContext("run", "n", Map.of("tools", List.of("echo")), services,
+                EventEmitter.noop());
         var result = node.execute(Map.of(), context);
         var definitions = (List<?>) result.get(AgentKeys.TOOL_DEFINITIONS);
         assertEquals(1, definitions.size());

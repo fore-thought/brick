@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import tech.forethought.brick.core.event.EventKinds;
 import tech.forethought.brick.core.model.Message;
+import tech.forethought.brick.core.model.MessageCodec;
 import tech.forethought.brick.core.spi.EdgeKeys;
 import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.NodeContext;
@@ -31,9 +33,12 @@ public final class InputNode implements Node {
         if (text == null) {
             throw new IllegalArgumentException("input node: edge data is missing key 'input'");
         }
+        var message = new Message.UserMessage(String.valueOf(text));
         var messages = new ArrayList<>(
                 (List<Message>) input.getOrDefault(EdgeKeys.MESSAGES, List.of()));
-        messages.add(new Message.UserMessage(String.valueOf(text)));
+        messages.add(message);
+        context.events().emit(EventKinds.MESSAGE_APPENDED,
+                Map.of("message", MessageCodec.toMap(message)));
         var out = new LinkedHashMap<>(input);
         out.put(EdgeKeys.MESSAGES, List.copyOf(messages));
         return out;
