@@ -7,7 +7,7 @@
 ## 项目定位
 
 - 平台仓：纯库集合，不含可运行入口（无 `main`）；各模块可独立发布为 JAR。
-- 以 Maven 多模块组织，模块位于仓内顶层目录（当前为 `core/`、`nodes-basic/`）。parent pom（`packaging=pom`：聚合器 + 版本/继承管理，发布到 Maven Central 供实例项目与第三方插件继承）有意搁置，待模块集合稳定后落地。
+- 以 Maven 多模块组织，模块位于仓内顶层目录（当前为 `core/`、`nodes-basic/`、`ext-openai/`、`nodes-agent/`、`store-jsonl/`）。parent pom（`packaging=pom`：聚合器 + 版本/继承管理，发布到 Maven Central 供实例项目与第三方插件继承）有意搁置，待模块集合稳定后落地。
 
 ## 环境与命令
 

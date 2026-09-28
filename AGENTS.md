@@ -7,7 +7,7 @@
 ## Project Positioning
 
 - Platform repo: a collection of pure libraries with no runnable entry points (no `main`); each module can be published as a JAR independently.
-- Organized as Maven multi-module, with modules as top-level directories (currently `core/` and `nodes-basic/`). The parent pom (`packaging=pom`: aggregator + version/inheritance management, published to Maven Central for instance projects and third-party plugins to inherit from) is deliberately deferred until the module set settles.
+- Organized as Maven multi-module, with modules as top-level directories (currently `core/`, `nodes-basic/`, `ext-openai/`, `nodes-agent/`, `store-jsonl/`). The parent pom (`packaging=pom`: aggregator + version/inheritance management, published to Maven Central for instance projects and third-party plugins to inherit from) is deliberately deferred until the module set settles.
 
 ## Environment & Commands
 
