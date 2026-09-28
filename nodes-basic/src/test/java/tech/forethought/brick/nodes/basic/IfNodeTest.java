@@ -7,6 +7,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import tech.forethought.brick.core.spi.EdgeKeys;
 import tech.forethought.brick.core.spi.Node;
+import tech.forethought.brick.core.event.EventEmitter;
 import tech.forethought.brick.core.spi.NodeContext;
 import tech.forethought.brick.core.testkit.ManualServices;
 import tech.forethought.brick.core.testkit.NodeContractTest;
@@ -29,7 +30,7 @@ public final class IfNodeTest extends NodeContractTest {
     }
 
     private Map<String, Object> run(Map<String, Object> input) {
-        var context = new NodeContext("run", "n", sampleConfig(), new ManualServices());
+        var context = new NodeContext("run", "n", sampleConfig(), new ManualServices(), EventEmitter.noop());
         return subject().execute(input, context);
     }
 
@@ -45,7 +46,7 @@ public final class IfNodeTest extends NodeContractTest {
 
     @Test
     void missingKeyConfigFailsClearly() {
-        var context = new NodeContext("run", "n", Map.of(), new ManualServices());
+        var context = new NodeContext("run", "n", Map.of(), new ManualServices(), EventEmitter.noop());
         var e = assertThrows(IllegalArgumentException.class,
                 () -> subject().execute(Map.of(), context));
         assertEquals("if node requires config 'key'", e.getMessage());

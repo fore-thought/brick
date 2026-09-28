@@ -7,7 +7,7 @@
 ## 项目定位
 
 - 平台仓：纯库集合，不含可运行入口（无 `main`）；各模块可独立发布为 JAR。
-- 以 Maven 多模块组织，模块位于仓内顶层目录（当前为 `core/`、`nodes-basic/`、`ext-openai/`、`nodes-agent/`、`store-jsonl/`）。parent pom（`packaging=pom`：聚合器 + 版本/继承管理，发布到 Maven Central 供实例项目与第三方插件继承）有意搁置，待模块集合稳定后落地。
+- 以 Maven 多模块组织，模块位于仓内顶层目录（当前为 `core/`、`nodes-basic/`、`ext-openai/`、`nodes-agent/`、`store-jsonl/`）。根 `pom.xml` 为 parent pom（`packaging=pom`：聚合器 + 版本/继承管理，将来发布到 Maven Central 供实例项目与第三方插件继承）。
 
 ## 环境与命令
 
@@ -16,10 +16,9 @@
 - 编译：`mvnd compile`
 - 运行测试：`mvnd test`
 
-以上命令在各模块目录内执行（如 `cd core && mvnd test`）。
+以上命令在仓根目录执行即可（反应堆自动按依赖排序构建全部模块）；也可在单个模块目录内执行。
 
-## 过渡期现状
+## 现状
 
-- 根目录的 IDEA 脚手架（旧 `pom.xml` 与 `src/`）已移除。各模块当前是独立 pom（暂不继承 parent），parent pom 有意搁置，待模块集合稳定后落地。
-- 因无聚合器，跨模块依赖需先在被依赖模块内执行 `mvnd install`（或从配置的 snapshot 仓解析）。
+- parent pom 已落地（2026-09-28，模块达五个时）：跨模块构建由反应堆自动排序，无需再逐模块 `install`；对外（前端仓等独立仓）解析平台模块仍需本地 `mvnd install` 或 settings.xml 快照仓。
 - `core` 的测试设施（契约套件与测试替身）以 test-jar 随模块发布，供扩展模块继承运行同一套契约测试。

@@ -7,6 +7,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import tech.forethought.brick.core.spi.EdgeKeys;
 import tech.forethought.brick.core.spi.Node;
+import tech.forethought.brick.core.event.EventEmitter;
 import tech.forethought.brick.core.spi.NodeContext;
 import tech.forethought.brick.core.testkit.ManualServices;
 import tech.forethought.brick.core.testkit.NodeContractTest;
@@ -30,13 +31,13 @@ public final class SwitchNodeTest extends NodeContractTest {
 
     @Test
     void routesByStringFormOfValue() {
-        var context = new NodeContext("run", "n", sampleConfig(), new ManualServices());
+        var context = new NodeContext("run", "n", sampleConfig(), new ManualServices(), EventEmitter.noop());
         assertEquals("b", subject().execute(sampleInput(), context).get(EdgeKeys.ROUTE));
     }
 
     @Test
     void missingInputKeyFailsClearly() {
-        var context = new NodeContext("run", "n", sampleConfig(), new ManualServices());
+        var context = new NodeContext("run", "n", sampleConfig(), new ManualServices(), EventEmitter.noop());
         var e = assertThrows(IllegalArgumentException.class,
                 () -> subject().execute(Map.of(), context));
         assertEquals("switch node: input is missing key 'kind'", e.getMessage());

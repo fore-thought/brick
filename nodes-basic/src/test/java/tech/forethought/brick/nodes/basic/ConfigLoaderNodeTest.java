@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tech.forethought.brick.core.spi.Node;
+import tech.forethought.brick.core.event.EventEmitter;
 import tech.forethought.brick.core.spi.NodeContext;
 import tech.forethought.brick.core.testkit.ManualServices;
 import tech.forethought.brick.core.testkit.NodeContractTest;
@@ -41,7 +42,7 @@ public final class ConfigLoaderNodeTest extends NodeContractTest {
 
     @Test
     void loadsEntriesOntoEdgeData() {
-        var context = new NodeContext("run", "n", sampleConfig(), new ManualServices());
+        var context = new NodeContext("run", "n", sampleConfig(), new ManualServices(), EventEmitter.noop());
         var result = subject().execute(Map.of("existing", 1), context);
         assertEquals("mock", result.get("llm.protocol"));
         assertEquals("test-model", result.get("llm.model"));
@@ -51,7 +52,7 @@ public final class ConfigLoaderNodeTest extends NodeContractTest {
     @Test
     void missingFileFailsClearly() {
         var context = new NodeContext("run", "n",
-                Map.of("path", dir.resolve("nope.properties").toString()), new ManualServices());
+                Map.of("path", dir.resolve("nope.properties").toString()), new ManualServices(), EventEmitter.noop());
         var e = assertThrows(IllegalArgumentException.class,
                 () -> subject().execute(Map.of(), context));
         assertTrue(e.getMessage().contains("nope.properties"));
@@ -59,7 +60,7 @@ public final class ConfigLoaderNodeTest extends NodeContractTest {
 
     @Test
     void missingPathConfigFailsClearly() {
-        var context = new NodeContext("run", "n", Map.of(), new ManualServices());
+        var context = new NodeContext("run", "n", Map.of(), new ManualServices(), EventEmitter.noop());
         var e = assertThrows(IllegalArgumentException.class,
                 () -> subject().execute(Map.of(), context));
         assertTrue(e.getMessage().contains("'path'"));

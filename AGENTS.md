@@ -7,7 +7,7 @@
 ## Project Positioning
 
 - Platform repo: a collection of pure libraries with no runnable entry points (no `main`); each module can be published as a JAR independently.
-- Organized as Maven multi-module, with modules as top-level directories (currently `core/`, `nodes-basic/`, `ext-openai/`, `nodes-agent/`, `store-jsonl/`). The parent pom (`packaging=pom`: aggregator + version/inheritance management, published to Maven Central for instance projects and third-party plugins to inherit from) is deliberately deferred until the module set settles.
+- Organized as Maven multi-module, with modules as top-level directories (currently `core/`, `nodes-basic/`, `ext-openai/`, `nodes-agent/`, `store-jsonl/`). The root `pom.xml` is the parent pom (`packaging=pom`: aggregator + version/inheritance management, to be published to Maven Central for instance projects and third-party plugins to inherit from).
 
 ## Environment & Commands
 
@@ -16,10 +16,9 @@ Requirements: JDK 25+, mvnd (Maven Daemon); test framework JUnit 6.1.3 (test sco
 - Compile: `mvnd compile`
 - Run tests: `mvnd test`
 
-Run the commands inside each module directory (e.g., `cd core && mvnd test`).
+Run the commands at the repo root (the reactor builds all modules in dependency order); running them inside a single module directory works too.
 
-## Transitional Status Quo
+## Status Quo
 
-- The root IDEA scaffolding (former `pom.xml` and `src/`) has been removed. Modules are currently standalone poms (not yet inheriting from a parent); the parent pom is deliberately deferred until the module set settles.
-- Without an aggregator, cross-module dependencies require running `mvnd install` in the depended-on module first (or resolving from the configured snapshot repository).
+- The parent pom landed on 2026-09-28 (with five modules): cross-module builds are reactor-ordered, no more per-module `install`. Standalone consumers (frontend repos, etc.) still resolve platform modules via local `mvnd install` or a `settings.xml` snapshot repository.
 - `core` ships its test fixtures (contract test suites and test doubles) as a test-jar, so extension modules can run the same contract suites.
