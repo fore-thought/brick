@@ -32,6 +32,7 @@ public interface ProtocolAdapter {
     /**
      * Performs the call. Responses stream in protocol shape; protocol
      * specifics such as SSE chunking are the implementation's business.
+     * The returned stream is single-use and consumed on the caller's thread.
      */
     Stream<ProtocolResponse> call(ProtocolRequest request);
 
