@@ -21,4 +21,11 @@ public interface Services {
 
     /** Returns every registered implementation of {@code spiType}. */
     <T> List<T> all(Class<T> spiType);
+
+    /**
+     * Releases extension class loaders held by this registry; already-loaded
+     * implementations remain usable. Default: nothing to release.
+     */
+    default void close() {
+    }
 }
