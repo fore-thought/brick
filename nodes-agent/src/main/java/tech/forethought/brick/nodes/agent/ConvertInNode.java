@@ -1,0 +1,52 @@
+package tech.forethought.brick.nodes.agent;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import tech.forethought.brick.core.model.Message;
+import tech.forethought.brick.core.model.ProtocolResponse;
+import tech.forethought.brick.core.spi.EdgeKeys;
+import tech.forethought.brick.core.spi.Node;
+import tech.forethought.brick.core.spi.NodeContext;
+import tech.forethought.brick.core.spi.ProtocolAdapter;
+
+/**
+ * Inbound conversion node: folds response chunks into an assistant message,
+ * appends it to the conversation, and flags tool-call presence (key
+ * {@code "hasToolCalls"}). Thread-safe (stateless).
+ */
+public final class ConvertInNode implements Node {
+
+    /** The spec type name of this node. */
+    public static final String TYPE = "convert-in";
+
+    @Override
+    public String type() {
+        return TYPE;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> execute(Map<String, Object> input, NodeContext context) {
+        var responses = (List<ProtocolResponse>) input.get(AgentKeys.PROTOCOL_RESPONSES);
+        if (responses == null || responses.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "convert-in node: edge data is missing key 'protocolResponses'");
+        }
+        var messages = (List<Message>) input.get(EdgeKeys.MESSAGES);
+        if (messages == null) {
+            throw new IllegalArgumentException(
+                    "convert-in node: edge data is missing key 'messages'");
+        }
+        var adapter = context.services().require(ProtocolAdapter.class,
+                responses.getFirst().protocol());
+        var assistantMessage = adapter.convertResponse(responses.stream());
+        var history = new ArrayList<>(messages);
+        history.add(assistantMessage);
+        var out = new LinkedHashMap<>(input);
+        out.put(EdgeKeys.MESSAGES, List.copyOf(history));
+        out.put(AgentKeys.HAS_TOOL_CALLS, !assistantMessage.toolCalls().isEmpty());
+        return out;
+    }
+}
