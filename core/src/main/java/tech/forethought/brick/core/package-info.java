@@ -1,6 +1,7 @@
 /**
- * Contracts of the Brick graph engine: interfaces and data protocol formats.
- * This package carries the published surface of the core module;
- * implementations are always options chosen at assembly time.
+ * Contracts and engine of the Brick graph engine: domain data ({@code model}),
+ * graph structure ({@code spec}), SPI contracts ({@code spi}), the caller
+ * engine ({@code engine}), and assembly ({@code bootstrap}).
+ * Implementations are always options chosen at assembly time.
  */
 package tech.forethought.brick.core;

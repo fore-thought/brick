@@ -1,9 +1,10 @@
 # Brick Core
 
-> Core contracts of the Brick AI graph engine libraries.
+> Core module of the Brick AI graph engine libraries: contracts and engine.
 
 - Coordinates: `tech.forethought.brick:core:0.1.0-SNAPSHOT`
-- Status: transitional — `TextTransformer` is a placeholder contract that only validates the SPI machinery (service declarations, ServiceLoader discovery, contract test suites); it will be replaced by real contracts when the engine lands.
+- Contents: domain data (`model`), graph structure (`spec`), SPI contracts (`spi`: `Node` / `ProtocolAdapter` / `Tool`), the engine (`engine`), and assembly (`bootstrap`).
+- Test fixtures ship as a test-jar: SPI contract test suites and test doubles (`testkit` / `mock`), so extension modules can run the same suites against their implementations to prove replaceability.
 
 中文版本见 [README.zh.md](README.zh.md)。
 
@@ -14,6 +15,7 @@ Requires JDK 25+ and mvnd; run inside this directory:
 ```bash
 mvnd compile   # compile
 mvnd test      # run tests
+mvnd install   # install to the local repo (so sibling modules can resolve it)
 ```
 
 ## Documentation
