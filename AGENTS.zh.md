@@ -7,7 +7,7 @@
 ## 项目定位
 
 - 平台仓：纯库集合，不含可运行入口（无 `main`）；各模块可独立发布为 JAR。
-- 以 Maven 多模块组织，模块位于仓内顶层目录（当前仅 `core/`）。parent pom（`packaging=pom`：聚合器 + 版本/继承管理，发布到 Maven Central 供实例项目与第三方插件继承）有意搁置，待模块集合稳定后落地。
+- 以 Maven 多模块组织，模块位于仓内顶层目录（当前为 `core/`、`nodes-basic/`）。parent pom（`packaging=pom`：聚合器 + 版本/继承管理，发布到 Maven Central 供实例项目与第三方插件继承）有意搁置，待模块集合稳定后落地。
 
 ## 环境与命令
 
@@ -20,4 +20,6 @@
 
 ## 过渡期现状
 
-根目录的 IDEA 脚手架（旧 `pom.xml` 与 `src/`）已移除。`core/` 为首个模块，当前是独立 pom（暂不继承 parent）。`core` 中的 `TextTransformer` 是占位契约，仅用于验证 SPI 机制（服务声明、ServiceLoader 发现、契约测试套件），引擎落地时将被真实契约替换。
+- 根目录的 IDEA 脚手架（旧 `pom.xml` 与 `src/`）已移除。各模块当前是独立 pom（暂不继承 parent），parent pom 有意搁置，待模块集合稳定后落地。
+- 因无聚合器，跨模块依赖需先在被依赖模块内执行 `mvnd install`（或从配置的 snapshot 仓解析）。
+- `core` 的测试设施（契约套件与测试替身）以 test-jar 随模块发布，供扩展模块继承运行同一套契约测试。
