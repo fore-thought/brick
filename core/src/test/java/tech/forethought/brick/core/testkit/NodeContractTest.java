@@ -29,8 +29,14 @@ public abstract class NodeContractTest {
         return Map.of();
     }
 
-    private NodeContext context() {
-        return new NodeContext("test-run", "test-node", sampleConfig(), new ManualServices());
+    /** Hook to register the services the node under test needs. */
+    protected void configureServices(ManualServices services) {
+    }
+
+    protected final NodeContext context() {
+        var services = new ManualServices();
+        configureServices(services);
+        return new NodeContext("test-run", "test-node", sampleConfig(), services);
     }
 
     @Test
