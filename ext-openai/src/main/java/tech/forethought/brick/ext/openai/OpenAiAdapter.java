@@ -19,6 +19,7 @@ import tech.forethought.brick.core.model.ProtocolResponse;
 import tech.forethought.brick.core.model.ToolCall;
 import tech.forethought.brick.core.model.ToolDefinition;
 import tech.forethought.brick.core.spi.ProtocolAdapter;
+import tech.forethought.brick.core.util.Json;
 
 /**
  * OpenAI chat-completions adapter. Wire format: the payload carries
@@ -114,6 +115,20 @@ public final class OpenAiAdapter implements ProtocolAdapter {
         }
         return new Message.AssistantMessage(content.toString(),
                 toolCalls.values().stream().map(ToolCallAccumulator::build).toList());
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public String textDelta(ProtocolResponse chunk) {
+        var choices = (List<Map<String, Object>>) chunk.payload().get("choices");
+        if (choices == null || choices.isEmpty()) {
+            return "";
+        }
+        var delta = (Map<String, Object>) choices.getFirst().get("delta");
+        if (delta == null) {
+            return "";
+        }
+        return delta.get("content") instanceof String text ? text : "";
     }
 
     private static Map<String, Object> toWireMessage(Message message) {

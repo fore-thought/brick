@@ -116,6 +116,16 @@ class OpenAiAdapterShapeTest {
         }
     }
 
+    @Test
+    void textDeltaExtractsIncrementalContent() {
+        var withText = new ProtocolResponse("openai",
+                Map.of("choices", List.of(Map.of("delta", Map.of("content", "Hel")))));
+        assertEquals("Hel", adapter.textDelta(withText));
+        var empty = new ProtocolResponse("openai",
+                Map.of("choices", List.of(Map.of("delta", Map.of()))));
+        assertEquals("", adapter.textDelta(empty));
+    }
+
     private static ProtocolResponse chunk(Map<String, Object> delta) {
         return new ProtocolResponse("openai", Map.of("choices", List.of(Map.of("delta", delta))));
     }
