@@ -1,6 +1,7 @@
 package tech.forethought.brick.core.bootstrap;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import tech.forethought.brick.core.spi.Services;
 
@@ -30,5 +31,13 @@ final class ServiceRegistry implements Services {
                     + " named '" + name + "'; available: " + byName.keySet());
         }
         return (T) implementation;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> List<T> all(Class<T> spiType) {
+        return byType.getOrDefault(spiType, Map.of()).values().stream()
+                .map(implementation -> (T) implementation)
+                .toList();
     }
 }

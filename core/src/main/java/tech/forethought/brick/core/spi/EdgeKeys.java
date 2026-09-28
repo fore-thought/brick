@@ -18,4 +18,7 @@ public final class EdgeKeys {
      * at the transition.
      */
     public static final String ROUTE = "route";
+
+    /** The session a run belongs to, supplied with the run input: {@code String}. */
+    public static final String SESSION_ID = "sessionId";
 }

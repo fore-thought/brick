@@ -17,6 +17,8 @@ import tech.forethought.brick.core.spi.NodeContext;
  */
 public abstract class NodeContractTest {
 
+    private final RecordingEmitter recordingEmitter = new RecordingEmitter();
+
     protected abstract Node subject();
 
     /** Sample edge data suited to the node under test. */
@@ -33,10 +35,16 @@ public abstract class NodeContractTest {
     protected void configureServices(ManualServices services) {
     }
 
+    /** Events the node under test has emitted. */
+    protected final RecordingEmitter emittedEvents() {
+        return recordingEmitter;
+    }
+
     protected final NodeContext context() {
         var services = new ManualServices();
         configureServices(services);
-        return new NodeContext("test-run", "test-node", sampleConfig(), services);
+        return new NodeContext("test-run", "test-node", sampleConfig(), services,
+                recordingEmitter);
     }
 
     @Test

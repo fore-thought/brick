@@ -1,5 +1,7 @@
 package tech.forethought.brick.core.spi;
 
+import java.util.List;
+
 /**
  * Runtime lookup for SPI implementations selected at assembly time. This is
  * how "at least one implementation exists" is verified: lazily, at the point
@@ -16,4 +18,7 @@ public interface Services {
      * @throws IllegalStateException if none is registered under that name
      */
     <T> T require(Class<T> spiType, String name);
+
+    /** Returns every registered implementation of {@code spiType}. */
+    <T> List<T> all(Class<T> spiType);
 }

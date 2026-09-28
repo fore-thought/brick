@@ -1,6 +1,7 @@
 package tech.forethought.brick.core.bootstrap;
 
 import java.util.ServiceLoader;
+import tech.forethought.brick.core.event.EventListener;
 import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.ProtocolAdapter;
 import tech.forethought.brick.core.spi.Services;
@@ -32,6 +33,9 @@ public final class Bootstrap {
         }
         for (var tool : ServiceLoader.load(Tool.class, loader)) {
             registry.register(Tool.class, tool.definition().name(), tool);
+        }
+        for (var listener : ServiceLoader.load(EventListener.class, loader)) {
+            registry.register(EventListener.class, listener.getClass().getName(), listener);
         }
         return registry;
     }

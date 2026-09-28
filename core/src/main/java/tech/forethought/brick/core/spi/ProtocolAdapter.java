@@ -38,4 +38,14 @@ public interface ProtocolAdapter {
 
     /** Inbound conversion: folds the response stream into an assistant message. */
     Message.AssistantMessage convertResponse(Stream<ProtocolResponse> responses);
+
+    /**
+     * Extracts the incremental text of one response chunk, for live display
+     * (the {@code token-delta} event). Empty when the chunk carries no text.
+     * The default signals "no streaming text"; adapters supporting streaming
+     * override it.
+     */
+    default String textDelta(ProtocolResponse chunk) {
+        return "";
+    }
 }

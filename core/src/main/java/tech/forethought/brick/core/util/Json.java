@@ -1,4 +1,4 @@
-package tech.forethought.brick.ext.openai;
+package tech.forethought.brick.core.util;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -6,24 +6,24 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Minimal JSON codec covering exactly the OpenAI wire format: objects,
- * arrays, strings, numbers, booleans, null. Not a general-purpose JSON
- * library. Static and thread-safe.
+ * Minimal JSON codec covering exactly the shapes of the data protocol:
+ * objects, arrays, strings, numbers, booleans, null. Not a general-purpose
+ * JSON library. Static and thread-safe.
  */
-final class Json {
+public final class Json {
 
     private Json() {
     }
 
     /** Serializes maps, lists, strings, numbers, booleans, and null. */
-    static String write(Object value) {
+    public static String write(Object value) {
         var out = new StringBuilder();
         writeValue(value, out);
         return out.toString();
     }
 
     /** Parses JSON text into maps, lists, strings, Long/Double, booleans, null. */
-    static Object read(String text) {
+    public static Object read(String text) {
         var parser = new Parser(text);
         var value = parser.readValue();
         parser.skipWhitespace();
