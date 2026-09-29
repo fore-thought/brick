@@ -9,12 +9,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import tech.forethought.brick.core.spi.EdgeKeys;
-import tech.forethought.brick.core.spi.Node;
-import tech.forethought.brick.core.spi.NodeContext;
 import tech.forethought.brick.core.spec.EdgeSpec;
 import tech.forethought.brick.core.spec.NodeSpec;
 import tech.forethought.brick.core.spec.PipelineSpec;
+import tech.forethought.brick.core.spi.EdgeKeys;
+import tech.forethought.brick.core.spi.Node;
+import tech.forethought.brick.core.spi.NodeContext;
 import tech.forethought.brick.core.testkit.ManualServices;
 
 class PipelineEngineTest {

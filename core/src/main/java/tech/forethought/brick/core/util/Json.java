@@ -8,7 +8,7 @@ import java.util.Map;
 /**
  * Minimal JSON codec covering exactly the shapes of the data protocol:
  * objects, arrays, strings, numbers, booleans, null. Not a general-purpose
- * JSON library. Static and thread-safe.
+ * JSON library. Thread-safe (stateless).
  */
 public final class Json {
 

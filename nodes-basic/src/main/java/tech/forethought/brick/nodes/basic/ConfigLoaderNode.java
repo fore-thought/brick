@@ -1,7 +1,6 @@
 package tech.forethought.brick.nodes.basic;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -34,7 +33,7 @@ public final class ConfigLoaderNode implements Node {
         }
         var file = Path.of(String.valueOf(path));
         var properties = new Properties();
-        try (Reader reader = Files.newBufferedReader(file)) {
+        try (var reader = Files.newBufferedReader(file)) {
             properties.load(reader);
         } catch (IOException e) {
             throw new IllegalArgumentException(

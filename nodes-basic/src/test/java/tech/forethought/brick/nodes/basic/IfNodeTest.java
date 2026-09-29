@@ -5,9 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import tech.forethought.brick.core.event.EventEmitter;
 import tech.forethought.brick.core.spi.EdgeKeys;
 import tech.forethought.brick.core.spi.Node;
-import tech.forethought.brick.core.event.EventEmitter;
 import tech.forethought.brick.core.spi.NodeContext;
 import tech.forethought.brick.core.testkit.ManualServices;
 import tech.forethought.brick.core.testkit.NodeContractTest;

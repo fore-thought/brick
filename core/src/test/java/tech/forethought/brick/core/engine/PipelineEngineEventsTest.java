@@ -11,11 +11,11 @@ import org.junit.jupiter.api.Test;
 import tech.forethought.brick.core.event.EventKinds;
 import tech.forethought.brick.core.event.EventListener;
 import tech.forethought.brick.core.event.TraceEvent;
-import tech.forethought.brick.core.spi.EdgeKeys;
-import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spec.EdgeSpec;
 import tech.forethought.brick.core.spec.NodeSpec;
 import tech.forethought.brick.core.spec.PipelineSpec;
+import tech.forethought.brick.core.spi.EdgeKeys;
+import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.testkit.ManualServices;
 
 class PipelineEngineEventsTest {

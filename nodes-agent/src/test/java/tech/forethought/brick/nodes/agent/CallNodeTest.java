@@ -12,14 +12,14 @@ import tech.forethought.brick.core.event.EventKinds;
 import tech.forethought.brick.core.mock.MockProtocolAdapter;
 import tech.forethought.brick.core.model.Message;
 import tech.forethought.brick.core.model.ModelConfig;
-import tech.forethought.brick.core.model.ProtocolResponse;
-import tech.forethought.brick.core.spi.NodeContext;
-import tech.forethought.brick.core.testkit.RecordingEmitter;
 import tech.forethought.brick.core.model.ProtocolRequest;
+import tech.forethought.brick.core.model.ProtocolResponse;
 import tech.forethought.brick.core.spi.Node;
+import tech.forethought.brick.core.spi.NodeContext;
 import tech.forethought.brick.core.spi.ProtocolAdapter;
 import tech.forethought.brick.core.testkit.ManualServices;
 import tech.forethought.brick.core.testkit.NodeContractTest;
+import tech.forethought.brick.core.testkit.RecordingEmitter;
 
 public final class CallNodeTest extends NodeContractTest {
 

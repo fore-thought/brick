@@ -5,8 +5,8 @@ import java.util.Map;
 
 /**
  * Maps between {@link Message} records and their portable map form (the data
- * protocol format used in event payloads and persistence). Static and
- * thread-safe.
+ * protocol format used in event payloads and persistence). Thread-safe
+ * (stateless).
  */
 public final class MessageCodec {
 

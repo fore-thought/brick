@@ -7,18 +7,19 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import tech.forethought.brick.core.event.EventEmitter;
 import tech.forethought.brick.core.event.EventKinds;
 import tech.forethought.brick.core.event.EventListener;
 import tech.forethought.brick.core.event.TraceEvent;
+import tech.forethought.brick.core.spec.EdgeSpec;
+import tech.forethought.brick.core.spec.NodeSpec;
+import tech.forethought.brick.core.spec.PipelineSpec;
 import tech.forethought.brick.core.spi.EdgeKeys;
 import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.NodeContext;
 import tech.forethought.brick.core.spi.Services;
-import tech.forethought.brick.core.spec.EdgeSpec;
-import tech.forethought.brick.core.spec.NodeSpec;
-import tech.forethought.brick.core.spec.PipelineSpec;
 
 /**
  * The graph engine — a pure caller. It walks the spec's edges, invokes each
@@ -30,7 +31,7 @@ import tech.forethought.brick.core.spec.PipelineSpec;
  * synchronous; a failing listener never affects the run or other listeners.
  * Payloads are redacted for sensitive keys.
  *
- * <p>Thread-safe; holds no run state between calls. Sequential execution;
+ * <p>Thread-safe: holds no run state between calls. Sequential execution;
  * parallel branches are a planned enhancement the topology already permits.
  */
 public final class PipelineEngine {
@@ -38,7 +39,7 @@ public final class PipelineEngine {
     private final Services services;
     private final List<EventListener> listeners;
     private final boolean debugSnapshots;
-    private final java.util.Set<String> extraSensitiveKeys;
+    private final Set<String> extraSensitiveKeys;
 
     public PipelineEngine(Services services) {
         this(services, new EngineConfig());

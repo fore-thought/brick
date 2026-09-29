@@ -15,14 +15,14 @@ import tech.forethought.brick.core.mock.MockProtocolAdapter;
 import tech.forethought.brick.core.model.Message;
 import tech.forethought.brick.core.model.ModelConfig;
 import tech.forethought.brick.core.model.ProtocolRequest;
+import tech.forethought.brick.core.spec.EdgeSpec;
+import tech.forethought.brick.core.spec.NodeSpec;
+import tech.forethought.brick.core.spec.PipelineSpec;
 import tech.forethought.brick.core.spi.EdgeKeys;
 import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.NodeContext;
 import tech.forethought.brick.core.spi.ProtocolAdapter;
 import tech.forethought.brick.core.spi.Tool;
-import tech.forethought.brick.core.spec.EdgeSpec;
-import tech.forethought.brick.core.spec.NodeSpec;
-import tech.forethought.brick.core.spec.PipelineSpec;
 import tech.forethought.brick.core.testkit.ManualServices;
 
 /**

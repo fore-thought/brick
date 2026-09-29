@@ -4,7 +4,7 @@ import java.util.Map;
 
 /**
  * Handle handed to nodes for emitting events onto the run's event stream.
- * Thread-safe; events are stamped and broadcast by the engine.
+ * Thread-safe: events are stamped and broadcast by the engine.
  */
 public interface EventEmitter {
 

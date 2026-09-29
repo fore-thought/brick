@@ -1,6 +1,7 @@
 package tech.forethought.brick.ext.openai;
 
 import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -26,7 +27,7 @@ import tech.forethought.brick.core.util.Json;
  * {@code "url"}, {@code "authToken"}, and {@code "body"} (the request map);
  * responses are SSE chunks folded back into an assistant message.
  *
- * <p>Thread-safe (stateless); the HTTP client is shared. The returned
+ * <p>Thread-safe (stateless): the HTTP client is shared. The returned
  * response stream is single-use and must be consumed on the caller's thread.
  */
 public final class OpenAiAdapter implements ProtocolAdapter {
@@ -68,7 +69,7 @@ public final class OpenAiAdapter implements ProtocolAdapter {
                 .POST(HttpRequest.BodyPublishers.ofString(
                         Json.write(payload.get("body")), StandardCharsets.UTF_8))
                 .build();
-        final HttpResponse<java.io.InputStream> response;
+        final HttpResponse<InputStream> response;
         try {
             response = CLIENT.send(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
         } catch (Exception e) {
