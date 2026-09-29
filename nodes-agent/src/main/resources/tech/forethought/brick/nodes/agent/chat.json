@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "name": "chat",
+  "entry": "config",
+  "nodes": [
+    { "id": "config", "type": "config-loader", "config": { "path": "config/llm.properties" } },
+    { "id": "input", "type": "input" },
+    { "id": "preprocess", "type": "context-preprocess" },
+    { "id": "convert", "type": "convert-out" },
+    { "id": "call", "type": "llm-call" },
+    { "id": "convert-back", "type": "convert-in" },
+    { "id": "has-tools", "type": "if", "config": { "key": "hasToolCalls", "equals": true } },
+    { "id": "exec", "type": "tool-exec" },
+    { "id": "out", "type": "output" }
+  ],
+  "edges": [
+    { "from": "config", "to": "input" },
+    { "from": "input", "to": "preprocess" },
+    { "from": "preprocess", "to": "convert" },
+    { "from": "convert", "to": "call" },
+    { "from": "call", "to": "convert-back" },
+    { "from": "convert-back", "to": "has-tools" },
+    { "from": "has-tools", "to": "exec", "label": "true" },
+    { "from": "has-tools", "to": "out", "label": "false" },
+    { "from": "exec", "to": "convert" }
+  ]
+}

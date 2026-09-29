@@ -17,6 +17,7 @@ import tech.forethought.brick.core.engine.SpecValidator;
 import tech.forethought.brick.core.mock.EchoTool;
 import tech.forethought.brick.core.mock.MockProtocolAdapter;
 import tech.forethought.brick.core.model.Message;
+import tech.forethought.brick.core.spec.PipelineSpecCodec;
 import tech.forethought.brick.core.spi.EdgeKeys;
 import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.ProtocolAdapter;
@@ -52,6 +53,23 @@ class DefaultSpecsTest {
     @Test
     void defaultChatSpecIsStructurallyClean() {
         assertTrue(SpecValidator.validate(DefaultSpecs.chat()).isEmpty());
+    }
+
+    @Test
+    void defaultChatSpecRoundTripsThroughCodec() {
+        var spec = DefaultSpecs.chat();
+        assertEquals(spec, PipelineSpecCodec.read(PipelineSpecCodec.write(spec)));
+    }
+
+    @Test
+    void customConfigPathReplacesOnlyTheConfigNode() {
+        var spec = DefaultSpecs.chat("custom/path.properties");
+        assertEquals(DefaultSpecs.chat().edges(), spec.edges());
+        assertEquals(DefaultSpecs.chat().entryNodeId(), spec.entryNodeId());
+        assertEquals(DefaultSpecs.chat().nodes().size(), spec.nodes().size());
+        var configNode = spec.nodes().stream().filter(node -> node.id().equals("config"))
+                .findFirst().orElseThrow();
+        assertEquals(Map.of("path", "custom/path.properties"), configNode.config());
     }
 
     @Test

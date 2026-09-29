@@ -1,16 +1,17 @@
 package tech.forethought.brick.nodes.agent;
 
-import java.util.List;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import tech.forethought.brick.core.spec.EdgeSpec;
 import tech.forethought.brick.core.spec.NodeSpec;
 import tech.forethought.brick.core.spec.PipelineSpec;
-import tech.forethought.brick.nodes.basic.ConfigLoaderNode;
-import tech.forethought.brick.nodes.basic.IfNode;
+import tech.forethought.brick.core.spec.PipelineSpecCodec;
 
 /**
- * Factory for the default graphs. Graphs are data; these are convenience
- * assemblies, freely replaceable by user-drawn specs.
+ * Factory for the default graphs. Graphs are data: the default chat chain
+ * itself ships as {@code chat.json} on the classpath, loaded through the
+ * platform codec and freely replaceable by user-drawn specs.
  */
 public final class DefaultSpecs {
 
@@ -22,6 +23,9 @@ public final class DefaultSpecs {
 
     /** The default config file path used by {@link #chat()}. */
     public static final String DEFAULT_CONFIG_PATH = "config/llm.properties";
+
+    /** The id of the config-loader node in {@code chat.json}. */
+    private static final String CONFIG_NODE_ID = "config";
 
     /**
      * The default chat chain: config loading, input, context assembly,
@@ -37,29 +41,28 @@ public final class DefaultSpecs {
      * {@link #chat()}).
      */
     public static PipelineSpec chat(String configPath) {
-        return new PipelineSpec(CHAT,
-                List.of(
-                        new NodeSpec("config", ConfigLoaderNode.TYPE,
-                                Map.of("path", configPath)),
-                        new NodeSpec("input", InputNode.TYPE, Map.of()),
-                        new NodeSpec("preprocess", ContextPreprocessNode.TYPE, Map.of()),
-                        new NodeSpec("convert", ConvertOutNode.TYPE, Map.of()),
-                        new NodeSpec("call", CallNode.TYPE, Map.of()),
-                        new NodeSpec("convert-back", ConvertInNode.TYPE, Map.of()),
-                        new NodeSpec("has-tools", IfNode.TYPE,
-                                Map.of("key", AgentKeys.HAS_TOOL_CALLS, "equals", true)),
-                        new NodeSpec("exec", ToolExecNode.TYPE, Map.of()),
-                        new NodeSpec("out", OutputNode.TYPE, Map.of())),
-                List.of(
-                        new EdgeSpec("config", "input", null),
-                        new EdgeSpec("input", "preprocess", null),
-                        new EdgeSpec("preprocess", "convert", null),
-                        new EdgeSpec("convert", "call", null),
-                        new EdgeSpec("call", "convert-back", null),
-                        new EdgeSpec("convert-back", "has-tools", null),
-                        new EdgeSpec("has-tools", "exec", "true"),
-                        new EdgeSpec("has-tools", "out", "false"),
-                        new EdgeSpec("exec", "convert", null)),
-                "config");
+        var spec = readChatJson();
+        if (DEFAULT_CONFIG_PATH.equals(configPath)) {
+            return spec;
+        }
+        var nodes = spec.nodes().stream()
+                .map(node -> CONFIG_NODE_ID.equals(node.id())
+                        ? new NodeSpec(node.id(), node.type(), Map.of("path", configPath))
+                        : node)
+                .toList();
+        return new PipelineSpec(spec.name(), nodes, spec.edges(), spec.entryNodeId(),
+                spec.maxIterations());
+    }
+
+    private static PipelineSpec readChatJson() {
+        var resource = DefaultSpecs.class.getResource("chat.json");
+        if (resource == null) {
+            throw new IllegalStateException("bundled chat.json is missing from the classpath");
+        }
+        try (var in = resource.openStream()) {
+            return PipelineSpecCodec.read(new String(in.readAllBytes(), StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            throw new UncheckedIOException("failed to read bundled chat.json", e);
+        }
     }
 }
