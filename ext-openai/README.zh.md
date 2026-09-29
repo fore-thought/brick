@@ -2,7 +2,7 @@
 
 > OpenAI 协议适配器（`ProtocolAdapter` 实现），Brick 图引擎的首个真实协议扩展。
 
-- 坐标：`tech.forethought.brick:ext-openai:0.1.0-SNAPSHOT`
+- 坐标：`tech.forethought.brick:ext-openai:0.1.0`
 - 协议名：`openai`（`ModelConfig.protocol` 引用此名）
 - 实现要点：JDK 内置 `HttpClient` + 手写 SSE 流式解析 + 内置极简 JSON 编解码（仅覆盖协议所需形状）；零第三方依赖。
 - 经 `META-INF/services` 声明，由 `ServiceLoader` 发现。

@@ -2,7 +2,7 @@
 
 > 默认 agent 链节点包与默认图：聊天 agent 回路的参考实现。
 
-- 坐标：`tech.forethought.brick:nodes-agent:0.1.0-SNAPSHOT`
+- 坐标：`tech.forethought.brick:nodes-agent:0.1.0`
 - 节点（`Node` 实现，`META-INF/services` 声明）：`input`、`context-preprocess`、`convert-out`、`llm-call`、`convert-in`、`tool-exec`、`output`
 - 默认图：`DefaultSpecs.chat()`——`config`（config-loader，来自 nodes-basic）→ `input` → `preprocess` → `convert` → `call` → `convert-back` → `if(hasToolCalls)` →（`tool-exec` 回边）/（`output` 终点）
 - 边上键约定见 `AgentKeys`；模型配置经 `llm.*` 键来自配置文件（由 config-loader 加载），图数据不含密钥
