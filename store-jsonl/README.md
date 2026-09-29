@@ -2,7 +2,7 @@
 
 > JSONL session store: one append-only file per session (write side `EventListener`, read side `StateStore`).
 
-- Coordinates: `tech.forethought.brick:store-jsonl:0.1.0`
+- Coordinates: `tech.forethought.brick:store-jsonl:0.2.0-SNAPSHOT`
 - Write side: durable events appended as JSON lines; transient events (`token-delta`) are never persisted; persistence failures never break a run
 - Read side: `loadSession` replays `message-appended` events to reconstruct the conversation
 - Zero third-party dependencies (JSON via core's built-in minimal codec)

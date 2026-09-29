@@ -6,7 +6,7 @@
 
     <groupId>tech.forethought.brick</groupId>
     <artifactId>brick</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Brick Parent</name>
@@ -44,33 +44,33 @@
             <dependency>
                 <groupId>tech.forethought.brick</groupId>
                 <artifactId>core</artifactId>
-                <version>0.1.0</version>
+                <version>0.2.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>tech.forethought.brick</groupId>
                 <artifactId>core</artifactId>
-                <version>0.1.0</version>
+                <version>0.2.0-SNAPSHOT</version>
                 <type>test-jar</type>
             </dependency>
             <dependency>
                 <groupId>tech.forethought.brick</groupId>
                 <artifactId>nodes-basic</artifactId>
-                <version>0.1.0</version>
+                <version>0.2.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>tech.forethought.brick</groupId>
                 <artifactId>ext-openai</artifactId>
-                <version>0.1.0</version>
+                <version>0.2.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>tech.forethought.brick</groupId>
                 <artifactId>nodes-agent</artifactId>
-                <version>0.1.0</version>
+                <version>0.2.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>tech.forethought.brick</groupId>
                 <artifactId>store-jsonl</artifactId>
-                <version>0.1.0</version>
+                <version>0.2.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>org.junit</groupId>

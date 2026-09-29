@@ -2,7 +2,7 @@
 
 > OpenAI protocol adapter (a `ProtocolAdapter` implementation) — the first real protocol extension of the Brick graph engine.
 
-- Coordinates: `tech.forethought.brick:ext-openai:0.1.0`
+- Coordinates: `tech.forethought.brick:ext-openai:0.2.0-SNAPSHOT`
 - Protocol name: `openai` (referenced by `ModelConfig.protocol`)
 - Implementation: JDK `HttpClient` + hand-rolled SSE stream parsing + a built-in minimal JSON codec (covers exactly the protocol's shapes); zero third-party dependencies.
 - Declared via `META-INF/services`, discovered through `ServiceLoader`.

@@ -2,7 +2,7 @@
 
 > First-party default node pack: basic nodes (gateways and producers).
 
-- Coordinates: `tech.forethought.brick:nodes-basic:0.1.0`
+- Coordinates: `tech.forethought.brick:nodes-basic:0.2.0-SNAPSHOT`
 - Contents: `if` (routes `true` / `false` by comparing an input key with an expected value), `switch` (routes by the string form of an input key's value), and `config-loader` (loads a `.properties` file onto the edge data; config `path`).
 - Nodes are declared via `META-INF/services` and discovered through `ServiceLoader`; no UI frameworks, no third-party runtime dependencies.
 
