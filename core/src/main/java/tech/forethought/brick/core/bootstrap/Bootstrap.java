@@ -38,6 +38,7 @@ public final class Bootstrap {
     public static Services discover(ClassLoader loader) {
         var registry = new ServiceRegistry();
         registerAll(registry, loader);
+        registry.freeze();
         return registry;
     }
 
@@ -81,6 +82,7 @@ public final class Bootstrap {
             }
             created.forEach(registry::addExtensionLoader);
         }
+        registry.freeze();
         return registry;
     }
 
