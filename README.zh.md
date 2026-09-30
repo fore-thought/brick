@@ -6,7 +6,7 @@
 
 ## 状态
 
-早期阶段：架构方向已定稿，代码尚未开始。当前根目录的 `pom.xml`、`src/` 为 IDEA 脚手架，将来重构为 Maven 多模块布局（根 pom 转为 parent pom）。
+早期阶段，活跃开发中：图引擎内核、第一方节点包、OpenAI 适配器、JSONL 会话持久化已就位。最新 tag：`v0.1.0`；`main` 为 `0.2.0-SNAPSHOT`。模块为顶层目录（`core/`、`nodes-basic/`、`nodes-agent/`、`ext-openai/`、`store-jsonl/`）；根 `pom.xml` 为父 pom。
 
 ## 设计理念
 

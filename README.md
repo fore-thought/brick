@@ -6,7 +6,7 @@ This repository is the **platform repo** of the Brick project group: pure librar
 
 ## Status
 
-Early stage: the architectural direction is decided; code has not started yet. The current root `pom.xml` and `src/` are IDEA scaffolding and will be restructured into a Maven multi-module layout (the root pom becomes the parent pom).
+Early stage, actively developed: the graph-engine core, first-party node packs, an OpenAI adapter, and JSONL session persistence are in place. Latest tag: `v0.1.0`; `main` carries `0.2.0-SNAPSHOT`. Modules are top-level directories (`core/`, `nodes-basic/`, `nodes-agent/`, `ext-openai/`, `store-jsonl/`); the root `pom.xml` is the parent pom.
 
 ## Principles
 
