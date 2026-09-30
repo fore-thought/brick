@@ -25,6 +25,7 @@ mvnd test      # 运行测试
 
 ## 文档
 
+- 图拓扑 canonical 格式：[doc/pipeline-format.md](doc/pipeline-format.md) / [doc/pipeline-format.zh.md](doc/pipeline-format.zh.md)
 - 项目组工程总规范与子项目索引：brick-group 规范仓（`AGENTS.md`）
 - 本仓特定规则：[AGENTS.md](AGENTS.md) / [AGENTS.zh.md](AGENTS.zh.md)
 - 所有文档以英文为正本，同目录配对中文版（`foo.md` + `foo.zh.md`）；两版分歧时以中文版为准。

@@ -25,6 +25,7 @@ mvnd test      # run tests
 
 ## Documentation
 
+- Canonical pipeline (graph topology) format: [doc/pipeline-format.md](doc/pipeline-format.md) / [doc/pipeline-format.zh.md](doc/pipeline-format.zh.md)
 - Project-group engineering specification and subproject index: the brick-group specification repo (`AGENTS.md`)
 - Repo-specific agent rules: [AGENTS.md](AGENTS.md) / [AGENTS.zh.md](AGENTS.zh.md)
 - All documents are English-canonical, each paired with a Chinese version (`foo.md` + `foo.zh.md`) in the same directory; on divergence the Chinese version is authoritative.
