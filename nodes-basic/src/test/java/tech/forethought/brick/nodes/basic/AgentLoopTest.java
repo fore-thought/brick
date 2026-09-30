@@ -21,6 +21,9 @@ import tech.forethought.brick.core.spec.PipelineSpec;
 import tech.forethought.brick.core.spi.EdgeKeys;
 import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.NodeContext;
+import tech.forethought.brick.core.spi.NodeContract;
+import tech.forethought.brick.core.spi.NodeContract.Key;
+import tech.forethought.brick.core.spi.NodeContract.ValueType;
 import tech.forethought.brick.core.spi.ProtocolAdapter;
 import tech.forethought.brick.core.spi.Tool;
 import tech.forethought.brick.core.testkit.ManualServices;
@@ -44,6 +47,12 @@ class AgentLoopTest {
         }
 
         @Override
+        public NodeContract contract() {
+            return new NodeContract(List.of(),
+                    List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST)), false);
+        }
+
+        @Override
         public Map<String, Object> execute(Map<String, Object> input, NodeContext context) {
             var out = new LinkedHashMap<>(input);
             out.put(EdgeKeys.MESSAGES, List.of(new Message.UserMessage("hi")));
@@ -56,6 +65,12 @@ class AgentLoopTest {
         @Override
         public String type() {
             return "convert-out";
+        }
+
+        @Override
+        public NodeContract contract() {
+            return new NodeContract(List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST)),
+                    List.of(new Key("request", ValueType.ANY)), false);
         }
 
         @Override
@@ -74,6 +89,13 @@ class AgentLoopTest {
         @Override
         public String type() {
             return "call";
+        }
+
+        @Override
+        public NodeContract contract() {
+            return new NodeContract(List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST)),
+                    List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST),
+                            new Key("hasToolCalls", ValueType.BOOLEAN)), false);
         }
 
         @Override
@@ -101,6 +123,12 @@ class AgentLoopTest {
         }
 
         @Override
+        public NodeContract contract() {
+            return new NodeContract(List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST)),
+                    List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST)), false);
+        }
+
+        @Override
         @SuppressWarnings("unchecked")
         public Map<String, Object> execute(Map<String, Object> input, NodeContext context) {
             var messages = (List<Message>) input.get(EdgeKeys.MESSAGES);
@@ -122,6 +150,11 @@ class AgentLoopTest {
         @Override
         public String type() {
             return "noop";
+        }
+
+        @Override
+        public NodeContract contract() {
+            return NodeContract.empty();
         }
 
         @Override

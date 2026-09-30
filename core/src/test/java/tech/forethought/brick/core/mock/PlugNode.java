@@ -3,6 +3,7 @@ package tech.forethought.brick.core.mock;
 import java.util.Map;
 import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.NodeContext;
+import tech.forethought.brick.core.spi.NodeContract;
 
 /**
  * Test double for hot-plug loading: not declared in the platform's test
@@ -14,6 +15,11 @@ public final class PlugNode implements Node {
     @Override
     public String type() {
         return "plug";
+    }
+
+    @Override
+    public NodeContract contract() {
+        return NodeContract.empty();
     }
 
     @Override

@@ -15,6 +15,9 @@ import tech.forethought.brick.core.spec.PipelineSpec;
 import tech.forethought.brick.core.spi.EdgeKeys;
 import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.NodeContext;
+import tech.forethought.brick.core.spi.NodeContract;
+import tech.forethought.brick.core.spi.NodeContract.Key;
+import tech.forethought.brick.core.spi.NodeContract.ValueType;
 import tech.forethought.brick.core.testkit.ManualServices;
 
 class PipelineEngineTest {
@@ -24,6 +27,12 @@ class PipelineEngineTest {
         @Override
         public String type() {
             return "put";
+        }
+
+        @Override
+        public NodeContract contract() {
+            // written key names come from config "key"
+            return NodeContract.dynamicKeys();
         }
 
         @Override
@@ -42,6 +51,12 @@ class PipelineEngineTest {
         }
 
         @Override
+        public NodeContract contract() {
+            return new NodeContract(List.of(),
+                    List.of(new Key(EdgeKeys.ROUTE, ValueType.STRING)), true);
+        }
+
+        @Override
         public Map<String, Object> execute(Map<String, Object> input, NodeContext context) {
             var out = new LinkedHashMap<>(input);
             out.put(EdgeKeys.ROUTE,
@@ -55,6 +70,13 @@ class PipelineEngineTest {
         @Override
         public String type() {
             return "count";
+        }
+
+        @Override
+        public NodeContract contract() {
+            return new NodeContract(List.of(new Key("n", ValueType.NUMBER)),
+                    List.of(new Key("n", ValueType.NUMBER),
+                            new Key(EdgeKeys.ROUTE, ValueType.STRING)), false);
         }
 
         @Override
@@ -76,6 +98,11 @@ class PipelineEngineTest {
         }
 
         @Override
+        public NodeContract contract() {
+            return NodeContract.empty();
+        }
+
+        @Override
         public Map<String, Object> execute(Map<String, Object> input, NodeContext context) {
             throw new IllegalStateException("boom");
         }
@@ -86,6 +113,11 @@ class PipelineEngineTest {
         @Override
         public String type() {
             return "mutator";
+        }
+
+        @Override
+        public NodeContract contract() {
+            return NodeContract.empty();
         }
 
         @Override

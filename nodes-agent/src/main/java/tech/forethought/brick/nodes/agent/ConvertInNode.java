@@ -11,6 +11,9 @@ import tech.forethought.brick.core.model.ProtocolResponse;
 import tech.forethought.brick.core.spi.EdgeKeys;
 import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.NodeContext;
+import tech.forethought.brick.core.spi.NodeContract;
+import tech.forethought.brick.core.spi.NodeContract.Key;
+import tech.forethought.brick.core.spi.NodeContract.ValueType;
 import tech.forethought.brick.core.spi.ProtocolAdapter;
 
 /**
@@ -26,6 +29,15 @@ public final class ConvertInNode implements Node {
     @Override
     public String type() {
         return TYPE;
+    }
+
+    @Override
+    public NodeContract contract() {
+        return new NodeContract(
+                List.of(new Key(AgentKeys.PROTOCOL_RESPONSES, ValueType.LIST),
+                        new Key(EdgeKeys.MESSAGES, ValueType.LIST)),
+                List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST),
+                        new Key(AgentKeys.HAS_TOOL_CALLS, ValueType.BOOLEAN)), false);
     }
 
     @Override

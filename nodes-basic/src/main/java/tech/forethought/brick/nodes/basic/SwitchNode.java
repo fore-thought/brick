@@ -1,10 +1,14 @@
 package tech.forethought.brick.nodes.basic;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import tech.forethought.brick.core.spi.EdgeKeys;
 import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.NodeContext;
+import tech.forethought.brick.core.spi.NodeContract;
+import tech.forethought.brick.core.spi.NodeContract.Key;
+import tech.forethought.brick.core.spi.NodeContract.ValueType;
 
 /**
  * Gateway node: routes by the string form of an input key's value. Config:
@@ -18,6 +22,13 @@ public final class SwitchNode implements Node {
     @Override
     public String type() {
         return TYPE;
+    }
+
+    @Override
+    public NodeContract contract() {
+        // the routed key's name comes from config "key", so reads are not enumerable
+        return new NodeContract(List.of(),
+                List.of(new Key(EdgeKeys.ROUTE, ValueType.STRING)), true);
     }
 
     @Override

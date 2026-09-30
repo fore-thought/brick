@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Properties;
 import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.NodeContext;
+import tech.forethought.brick.core.spi.NodeContract;
 
 /**
  * Producer node: loads a .properties file and puts its entries onto the edge
@@ -23,6 +24,12 @@ public final class ConfigLoaderNode implements Node {
     @Override
     public String type() {
         return TYPE;
+    }
+
+    @Override
+    public NodeContract contract() {
+        // written names come from the properties file, known only at run time
+        return NodeContract.dynamicKeys();
     }
 
     @Override

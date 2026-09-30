@@ -10,6 +10,9 @@ import tech.forethought.brick.core.model.MessageCodec;
 import tech.forethought.brick.core.spi.EdgeKeys;
 import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.NodeContext;
+import tech.forethought.brick.core.spi.NodeContract;
+import tech.forethought.brick.core.spi.NodeContract.Key;
+import tech.forethought.brick.core.spi.NodeContract.ValueType;
 import tech.forethought.brick.core.spi.Tool;
 
 /**
@@ -24,6 +27,12 @@ public final class ToolExecNode implements Node {
     @Override
     public String type() {
         return TYPE;
+    }
+
+    @Override
+    public NodeContract contract() {
+        return new NodeContract(List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST)),
+                List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST)), false);
     }
 
     @Override

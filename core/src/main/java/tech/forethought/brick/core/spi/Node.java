@@ -19,6 +19,15 @@ public interface Node {
     String type();
 
     /**
+     * Declares this node's edge-data interface (see {@link NodeContract}).
+     * The engine neither consumes nor enforces the declaration; editors and
+     * future diagnostics do.
+     *
+     * @return the contract, never null
+     */
+    NodeContract contract();
+
+    /**
      * Executes this node.
      *
      * @param input   immutable snapshot of the edge data; never modified by

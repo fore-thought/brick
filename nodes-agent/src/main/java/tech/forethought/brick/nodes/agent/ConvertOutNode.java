@@ -9,6 +9,9 @@ import tech.forethought.brick.core.model.ToolDefinition;
 import tech.forethought.brick.core.spi.EdgeKeys;
 import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.NodeContext;
+import tech.forethought.brick.core.spi.NodeContract;
+import tech.forethought.brick.core.spi.NodeContract.Key;
+import tech.forethought.brick.core.spi.NodeContract.ValueType;
 import tech.forethought.brick.core.spi.ProtocolAdapter;
 
 /**
@@ -25,6 +28,18 @@ public final class ConvertOutNode implements Node {
     @Override
     public String type() {
         return TYPE;
+    }
+
+    @Override
+    public NodeContract contract() {
+        return new NodeContract(
+                List.of(new Key("llm.protocol", ValueType.STRING),
+                        new Key("llm.base-url", ValueType.STRING),
+                        new Key("llm.api-key", ValueType.STRING),
+                        new Key("llm.model", ValueType.STRING),
+                        new Key(EdgeKeys.MESSAGES, ValueType.LIST),
+                        new Key(AgentKeys.TOOL_DEFINITIONS, ValueType.LIST)),
+                List.of(new Key(AgentKeys.PROTOCOL_REQUEST, ValueType.ANY)), false);
     }
 
     @Override

@@ -7,6 +7,9 @@ import tech.forethought.brick.core.model.Message;
 import tech.forethought.brick.core.spi.EdgeKeys;
 import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.NodeContext;
+import tech.forethought.brick.core.spi.NodeContract;
+import tech.forethought.brick.core.spi.NodeContract.Key;
+import tech.forethought.brick.core.spi.NodeContract.ValueType;
 
 /**
  * Terminal node of the default chain: extracts the last assistant message's
@@ -20,6 +23,12 @@ public final class OutputNode implements Node {
     @Override
     public String type() {
         return TYPE;
+    }
+
+    @Override
+    public NodeContract contract() {
+        return new NodeContract(List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST)),
+                List.of(new Key(AgentKeys.OUTPUT, ValueType.STRING)), false);
     }
 
     @Override

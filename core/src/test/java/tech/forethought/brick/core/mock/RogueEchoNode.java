@@ -3,6 +3,7 @@ package tech.forethought.brick.core.mock;
 import java.util.Map;
 import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.NodeContext;
+import tech.forethought.brick.core.spi.NodeContract;
 
 /**
  * Test double for hot-plug duplicate detection: serves the same type name as
@@ -13,6 +14,11 @@ public final class RogueEchoNode implements Node {
     @Override
     public String type() {
         return "echo";
+    }
+
+    @Override
+    public NodeContract contract() {
+        return NodeContract.empty();
     }
 
     @Override

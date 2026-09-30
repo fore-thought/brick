@@ -1,11 +1,15 @@
 package tech.forethought.brick.nodes.agent;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import tech.forethought.brick.core.event.EventKinds;
 import tech.forethought.brick.core.model.ProtocolRequest;
 import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.NodeContext;
+import tech.forethought.brick.core.spi.NodeContract;
+import tech.forethought.brick.core.spi.NodeContract.Key;
+import tech.forethought.brick.core.spi.NodeContract.ValueType;
 import tech.forethought.brick.core.spi.ProtocolAdapter;
 
 /**
@@ -21,6 +25,12 @@ public final class CallNode implements Node {
     @Override
     public String type() {
         return TYPE;
+    }
+
+    @Override
+    public NodeContract contract() {
+        return new NodeContract(List.of(new Key(AgentKeys.PROTOCOL_REQUEST, ValueType.ANY)),
+                List.of(new Key(AgentKeys.PROTOCOL_RESPONSES, ValueType.LIST)), false);
     }
 
     @Override
