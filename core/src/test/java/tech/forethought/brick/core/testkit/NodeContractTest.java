@@ -21,7 +21,7 @@ public abstract class NodeContractTest {
 
     protected abstract Node subject();
 
-    /** Sample edge data suited to the node under test. */
+    /** Sample input bindings suited to the node under test. */
     protected Map<String, Object> sampleInput() {
         return Map.of();
     }

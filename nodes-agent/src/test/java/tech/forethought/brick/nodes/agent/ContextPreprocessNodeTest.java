@@ -22,14 +22,18 @@ public final class ContextPreprocessNodeTest extends NodeContractTest {
         return new ContextPreprocessNode();
     }
 
+    @Override
+    protected Map<String, Object> sampleInput() {
+        return Map.of(EdgeKeys.MESSAGES, List.of(new Message.UserMessage("hi")));
+    }
+
     @Test
     @SuppressWarnings("unchecked")
     void prependsSystemPromptOnce() {
         var node = new ContextPreprocessNode();
         var context = new NodeContext("run", "n", Map.of("systemPrompt", "be brief"),
                 new ManualServices(), EventEmitter.noop());
-        var first = node.execute(Map.of(EdgeKeys.MESSAGES,
-                List.of(new Message.UserMessage("hi"))), context);
+        var first = node.execute(sampleInput(), context);
         var messages = (List<Message>) first.get(EdgeKeys.MESSAGES);
         assertEquals(2, messages.size());
         assertEquals(new Message.SystemMessage("be brief"), messages.getFirst());

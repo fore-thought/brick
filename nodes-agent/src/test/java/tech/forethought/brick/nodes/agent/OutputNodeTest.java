@@ -28,7 +28,7 @@ public final class OutputNodeTest extends NodeContractTest {
     @Test
     void extractsLastAssistantContent() {
         var result = subject().execute(sampleInput(), context());
-        assertEquals("answer", result.get(AgentKeys.OUTPUT));
+        assertEquals(Map.of(AgentKeys.OUTPUT, "answer"), result);
     }
 
     @Test

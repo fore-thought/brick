@@ -17,7 +17,7 @@ import tech.forethought.brick.core.util.Json;
 public final class PipelineSpecCodec {
 
     /** The format version this codec reads and writes. */
-    public static final int FORMAT_VERSION = 1;
+    public static final int FORMAT_VERSION = 2;
 
     private PipelineSpecCodec() {
     }
@@ -27,9 +27,14 @@ public final class PipelineSpecCodec {
         var map = new LinkedHashMap<String, Object>();
         map.put("version", FORMAT_VERSION);
         map.put("name", spec.name());
-        map.put("entry", spec.entryNodeId());
-        if (spec.maxIterations() != PipelineSpec.DEFAULT_MAX_ITERATIONS) {
-            map.put("maxIterations", spec.maxIterations());
+        if (spec.maxFirings() != PipelineSpec.DEFAULT_MAX_FIRINGS) {
+            map.put("maxFirings", spec.maxFirings());
+        }
+        if (!spec.inputs().isEmpty()) {
+            map.put("inputs", spec.inputs().stream().map(PipelineSpecCodec::pinToMap).toList());
+        }
+        if (!spec.outputs().isEmpty()) {
+            map.put("outputs", spec.outputs().stream().map(PipelineSpecCodec::pinToMap).toList());
         }
         map.put("nodes", spec.nodes().stream().map(PipelineSpecCodec::nodeToMap).toList());
         map.put("edges", spec.edges().stream().map(PipelineSpecCodec::edgeToMap).toList());
@@ -47,11 +52,12 @@ public final class PipelineSpecCodec {
             throw error("$", "unsupported format version " + version);
         }
         var name = requireString(map, "name", "$");
-        var entry = requireString(map, "entry", "$");
-        var maxIterations = PipelineSpec.DEFAULT_MAX_ITERATIONS;
-        if (map.get("maxIterations") != null) {
-            maxIterations = requireNumber(map, "maxIterations", "$").intValue();
+        var maxFirings = PipelineSpec.DEFAULT_MAX_FIRINGS;
+        if (map.get("maxFirings") != null) {
+            maxFirings = requireNumber(map, "maxFirings", "$").intValue();
         }
+        var inputs = pinListFromMap(map.get("inputs"), "$.inputs");
+        var outputs = pinListFromMap(map.get("outputs"), "$.outputs");
         var nodes = new ArrayList<NodeSpec>();
         var index = 0;
         for (var element : requireList(map, "nodes", "$")) {
@@ -68,7 +74,7 @@ public final class PipelineSpecCodec {
                 index++;
             }
         }
-        return new PipelineSpec(name, nodes, edges, entry, maxIterations);
+        return new PipelineSpec(name, nodes, edges, inputs, outputs, maxFirings);
     }
 
     /** Serializes a spec to compact JSON text. */
@@ -96,11 +102,15 @@ public final class PipelineSpecCodec {
 
     private static Map<String, Object> edgeToMap(EdgeSpec edge) {
         var map = new LinkedHashMap<String, Object>();
-        map.put("from", edge.from());
-        map.put("to", edge.to());
-        if (edge.label() != null) {
-            map.put("label", edge.label());
-        }
+        map.put("from", pinToMap(edge.from()));
+        map.put("to", pinToMap(edge.to()));
+        return map;
+    }
+
+    private static Map<String, Object> pinToMap(PinRef pin) {
+        var map = new LinkedHashMap<String, Object>();
+        map.put("node", pin.node());
+        map.put("key", pin.key());
         return map;
     }
 
@@ -115,13 +125,27 @@ public final class PipelineSpecCodec {
     }
 
     private static EdgeSpec edgeFromMap(Map<String, Object> map, String path) {
-        var from = requireString(map, "from", path);
-        var to = requireString(map, "to", path);
-        var labelValue = map.get("label");
-        if (labelValue != null && !(labelValue instanceof String)) {
-            throw error(path, "field 'label' must be a string");
+        var from = pinFromMap(map.get("from"), path + ".from");
+        var to = pinFromMap(map.get("to"), path + ".to");
+        return new EdgeSpec(from, to);
+    }
+
+    private static PinRef pinFromMap(Object value, String path) {
+        var map = requireObject(value, path);
+        return new PinRef(requireString(map, "node", path), requireString(map, "key", path));
+    }
+
+    private static List<PinRef> pinListFromMap(Object value, String path) {
+        var pins = new ArrayList<PinRef>();
+        if (value == null) {
+            return List.copyOf(pins);
         }
-        return new EdgeSpec(from, to, (String) labelValue);
+        var index = 0;
+        for (var element : asList(value, path)) {
+            pins.add(pinFromMap(element, path + "[" + index + "]"));
+            index++;
+        }
+        return List.copyOf(pins);
     }
 
     private static String requireString(Map<String, Object> map, String key, String path) {

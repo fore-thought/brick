@@ -14,8 +14,8 @@ import tech.forethought.brick.core.spi.ProtocolAdapter;
 
 /**
  * The call node: performs the protocol call and puts the response chunks on
- * the edge. The adapter is selected by the request's protocol name.
- * Thread-safe (stateless).
+ * the {@code "responses"} pin. The adapter is selected by the request's
+ * protocol name. Thread-safe (stateless).
  */
 public final class CallNode implements Node {
 
@@ -37,11 +37,11 @@ public final class CallNode implements Node {
     public Map<String, Object> execute(Map<String, Object> input, NodeContext context) {
         if (!(input.get(AgentKeys.PROTOCOL_REQUEST) instanceof ProtocolRequest request)) {
             throw new IllegalArgumentException(
-                    "llm-call node: edge data is missing key 'protocolRequest'");
+                    "llm-call node: input is missing key '" + AgentKeys.PROTOCOL_REQUEST + "'");
         }
         var adapter = context.services().require(ProtocolAdapter.class, request.protocol());
         var events = context.events();
-        var out = new LinkedHashMap<>(input);
+        var out = new LinkedHashMap<String, Object>();
         out.put(AgentKeys.PROTOCOL_RESPONSES, adapter.call(request)
                 .peek(chunk -> {
                     var delta = adapter.textDelta(chunk);
@@ -50,6 +50,6 @@ public final class CallNode implements Node {
                     }
                 })
                 .toList());
-        return out;
+        return Map.copyOf(out);
     }
 }

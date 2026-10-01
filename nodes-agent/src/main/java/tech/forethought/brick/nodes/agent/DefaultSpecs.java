@@ -30,7 +30,7 @@ public final class DefaultSpecs {
     /**
      * The default chat chain: config loading, input, context assembly,
      * outbound conversion, the model call, inbound conversion, the tool-call
-     * loop (via an if gateway), and the output terminal.
+     * loop (via a selective-delivery gateway), and the output terminal.
      */
     public static PipelineSpec chat() {
         return chat(DEFAULT_CONFIG_PATH);
@@ -50,8 +50,8 @@ public final class DefaultSpecs {
                         ? new NodeSpec(node.id(), node.type(), Map.of("path", configPath))
                         : node)
                 .toList();
-        return new PipelineSpec(spec.name(), nodes, spec.edges(), spec.entryNodeId(),
-                spec.maxIterations());
+        return new PipelineSpec(spec.name(), nodes, spec.edges(), spec.inputs(), spec.outputs(),
+                spec.maxFirings());
     }
 
     private static PipelineSpec readChatJson() {

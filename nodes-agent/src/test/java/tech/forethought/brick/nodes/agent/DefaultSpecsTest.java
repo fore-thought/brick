@@ -17,6 +17,7 @@ import tech.forethought.brick.core.engine.SpecValidator;
 import tech.forethought.brick.core.mock.EchoTool;
 import tech.forethought.brick.core.mock.MockProtocolAdapter;
 import tech.forethought.brick.core.model.Message;
+import tech.forethought.brick.core.spec.PinRef;
 import tech.forethought.brick.core.spec.PipelineSpecCodec;
 import tech.forethought.brick.core.spi.EdgeKeys;
 import tech.forethought.brick.core.spi.Node;
@@ -65,7 +66,8 @@ class DefaultSpecsTest {
     void customConfigPathReplacesOnlyTheConfigNode() {
         var spec = DefaultSpecs.chat("custom/path.properties");
         assertEquals(DefaultSpecs.chat().edges(), spec.edges());
-        assertEquals(DefaultSpecs.chat().entryNodeId(), spec.entryNodeId());
+        assertEquals(DefaultSpecs.chat().inputs(), spec.inputs());
+        assertEquals(DefaultSpecs.chat().outputs(), spec.outputs());
         assertEquals(DefaultSpecs.chat().nodes().size(), spec.nodes().size());
         var configNode = spec.nodes().stream().filter(node -> node.id().equals("config"))
                 .findFirst().orElseThrow();
@@ -84,16 +86,18 @@ class DefaultSpecsTest {
                 """);
 
         var result = new PipelineEngine(services())
-                .run(DefaultSpecs.chat(propertiesFile.toString()), Map.of(AgentKeys.INPUT, "hi"));
+                .run(DefaultSpecs.chat(propertiesFile.toString()),
+                        Map.of(new PinRef("input", AgentKeys.INPUT), "hi"));
 
-        assertEquals("done", result.get(AgentKeys.OUTPUT));
-        assertEquals(false, result.get(AgentKeys.HAS_TOOL_CALLS));
-        assertFalse(result.containsKey(EdgeKeys.ROUTE));
-        var messages = (List<Message>) result.get(EdgeKeys.MESSAGES);
+        assertEquals("done", result.get(new PinRef("out", AgentKeys.OUTPUT)));
+        assertEquals(false, result.get(new PinRef("convert-back", AgentKeys.HAS_TOOL_CALLS)));
+        var messages = (List<Message>) result.get(new PinRef("out", EdgeKeys.MESSAGES));
         assertEquals(4, messages.size());
         assertInstanceOf(Message.UserMessage.class, messages.get(0));
         assertInstanceOf(Message.AssistantMessage.class, messages.get(1));
         assertInstanceOf(Message.ToolResultMessage.class, messages.get(2));
-        assertInstanceOf(Message.AssistantMessage.class, messages.get(3));
+        var last = assertInstanceOf(Message.AssistantMessage.class, messages.get(3));
+        assertEquals("done", last.content());
+        assertFalse(result.containsKey(new PinRef("out", "true")));
     }
 }

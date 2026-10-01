@@ -1,13 +1,13 @@
 package tech.forethought.brick.core.spec;
 
 /**
- * A directed edge between two nodes. A null label marks the default edge;
- * labeled edges are matched against the route value left by gateway nodes.
- * Immutable.
+ * A data wire: every value the source node writes to {@code from.key} is
+ * delivered (sticky, later writes overwrite earlier ones) to {@code to.key}
+ * of the target node. Execution order is derived from these data
+ * dependencies; the edge itself carries no routing logic. Immutable.
  *
- * @param from  source node id
- * @param to    target node id
- * @param label route label, or null for the default edge
+ * @param from the producing pin
+ * @param to   the consuming pin
  */
-public record EdgeSpec(String from, String to, String label) {
+public record EdgeSpec(PinRef from, PinRef to) {
 }

@@ -50,7 +50,7 @@ public final class CallNodeTest extends NodeContractTest {
     void missingRequestFailsClearly() {
         var e = assertThrows(IllegalArgumentException.class,
                 () -> subject().execute(Map.of(), context()));
-        assertTrue(e.getMessage().contains("protocolRequest"));
+        assertTrue(e.getMessage().contains("'request'"));
     }
 
     @Test

@@ -1,7 +1,9 @@
 package tech.forethought.brick.core.engine;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -15,16 +17,22 @@ import tech.forethought.brick.core.event.EventListener;
 import tech.forethought.brick.core.event.TraceEvent;
 import tech.forethought.brick.core.spec.EdgeSpec;
 import tech.forethought.brick.core.spec.NodeSpec;
+import tech.forethought.brick.core.spec.PinRef;
 import tech.forethought.brick.core.spec.PipelineSpec;
-import tech.forethought.brick.core.spi.EdgeKeys;
 import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.NodeContext;
+import tech.forethought.brick.core.spi.NodeContract;
 import tech.forethought.brick.core.spi.Services;
 
 /**
- * The graph engine — a pure caller. It walks the spec's edges, invokes each
- * node, and routes by matching edge labels against the route key left by
- * gateway nodes. It understands no business logic.
+ * The dataflow engine — a pure caller. Edges are bindings: a value a node
+ * writes to an output pin is delivered, sticky, to every wired input pin.
+ * A node fires once all pins its contract declares as reads or context
+ * carry a binding, and re-fires when any of its reads receives a new value —
+ * context pins are bound-once companions that never trigger by themselves.
+ * Nodes with no reads and no context fire once at the start. A run ends
+ * silently when no node can fire; the firing cap bounds runaway loops. It
+ * understands no business logic.
  *
  * <p>Every fact of the run is emitted onto an append-only event stream:
  * observation, persistence, and live display are all listeners. Emission is
@@ -32,7 +40,7 @@ import tech.forethought.brick.core.spi.Services;
  * Payloads are redacted for sensitive keys.
  *
  * <p>Thread-safe: holds no run state between calls. Sequential execution;
- * parallel branches are a planned enhancement the topology already permits.
+ * the trigger queue is the future seam for parallel branch scheduling.
  */
 public final class PipelineEngine {
 
@@ -55,64 +63,107 @@ public final class PipelineEngine {
     }
 
     /**
-     * Runs the spec from its entry node until a terminal node (no out-edges).
+     * Runs the graph until no node can fire (silent termination) or the
+     * firing cap is hit.
      *
-     * @param input initial edge data; not modified
-     * @return the final edge data
-     * @throws PipelineException on spec errors, node failure, unroutable
-     *         transitions, or when the iteration cap is hit
+     * @param input initial bindings, keyed by pin; typically the values for
+     *              the spec's declared {@code inputs}
+     * @return all pin bindings at termination — declared {@code outputs} are
+     *         read from this map
+     * @throws PipelineException on spec errors, node failure (with the node's
+     *         identity), or when the firing cap is hit
      */
-    public Map<String, Object> run(PipelineSpec spec, Map<String, Object> input) {
+    public Map<PinRef, Object> run(PipelineSpec spec, Map<PinRef, Object> input) {
+        return run(spec, input, "default");
+    }
+
+    /**
+     * Runs the graph with an explicit session identity (see {@link #run
+     * (PipelineSpec, Map)}).
+     */
+    public Map<PinRef, Object> run(PipelineSpec spec, Map<PinRef, Object> input,
+                                   String sessionId) {
         var errors = SpecValidator.validate(spec).stream()
                 .filter(d -> d.severity() == Diagnostic.Severity.ERROR)
                 .toList();
         if (!errors.isEmpty()) {
             throw new PipelineException("spec has errors: " + errors);
         }
-        var nodesById = new HashMap<String, NodeSpec>();
-        for (var node : spec.nodes()) {
-            nodesById.put(node.id(), node);
-        }
 
         var runId = UUID.randomUUID().toString();
-        var sessionId = Objects.toString(input.get(EdgeKeys.SESSION_ID), "default");
-        var data = Map.copyOf(input);
-        var iterations = 0;
         emit(EventKinds.RUN_START, runId, sessionId, null, Map.of("spec", spec.name()));
-        var currentId = spec.entryNodeId();
         try {
-            while (currentId != null) {
-                if (++iterations > spec.maxIterations()) {
+            var assembly = assemble(spec);
+            var bindings = new LinkedHashMap<PinRef, Object>();
+            // the last value each node wrote under each key, even when no edge
+            // consumes it: what the run result reports for the node's own pins
+            var ownWrites = new LinkedHashMap<PinRef, Object>();
+            var pinVersion = new HashMap<PinRef, Integer>();
+            var firedVersion = new HashMap<String, Integer>();
+            var fired = new HashSet<String>();
+            var queue = new ArrayDeque<String>();
+            var queued = new HashSet<String>();
+            input.forEach((pin, value) -> bind(bindings, pinVersion, pin, value));
+
+            var firings = 0;
+            enqueueReady(spec, assembly, bindings, pinVersion, firedVersion, fired, queue,
+                    queued);
+            while (!queue.isEmpty()) {
+                var id = queue.poll();
+                queued.remove(id);
+                if (++firings > spec.maxFirings()) {
                     throw new PipelineException(
-                            "loop protection: exceeded maxIterations=" + spec.maxIterations());
+                            "loop protection: exceeded maxFirings=" + spec.maxFirings());
                 }
-                var nodeSpec = nodesById.get(currentId);
-                emit(EventKinds.NODE_ENTER, runId, sessionId, currentId, payloadOf(data));
-                var emitter = new NodeEmitter(runId, sessionId, currentId);
+                var nodeSpec = assembly.nodesById().get(id);
+                var trigger = triggerInput(id, assembly.readsByNode().get(id),
+                        assembly.contextByNode().get(id), bindings);
+                emit(EventKinds.NODE_ENTER, runId, sessionId, id, payloadOf(trigger));
+                var emitter = new NodeEmitter(runId, sessionId, id);
                 var context = new NodeContext(runId, nodeSpec.id(), nodeSpec.config(), services,
                         emitter);
                 Map<String, Object> output;
                 try {
-                    var node = services.require(Node.class, nodeSpec.type());
-                    output = node.execute(data, context);
+                    var raw = assembly.nodeImpls().get(id).execute(trigger, context);
+                    if (raw == null) {
+                        throw new PipelineException("node '" + nodeSpec.id() + "' (type '"
+                                + nodeSpec.type() + "') returned null");
+                    }
+                    output = Map.copyOf(raw);
+                } catch (PipelineException e) {
+                    throw e;
                 } catch (Exception e) {
                     throw new PipelineException("node '" + nodeSpec.id() + "' (type '"
                             + nodeSpec.type() + "') failed: " + e.getMessage(), e);
                 }
-                if (output == null) {
-                    throw new PipelineException("node '" + nodeSpec.id() + "' returned null");
+                fired.add(id);
+                firedVersion.put(id, readVersion(id, assembly.readsByNode().get(id), pinVersion));
+                emit(EventKinds.NODE_EXIT, runId, sessionId, id, payloadOf(output));
+                for (var entry : output.entrySet()) {
+                    var from = new PinRef(id, entry.getKey());
+                    // own writes never count as new input: a node that writes
+                    // a pin it also reads must not re-trigger itself — loops
+                    // are driven by edge redelivery
+                    ownWrites.put(from, entry.getValue());
+                    for (var edge : assembly.outEdges().getOrDefault(from, List.of())) {
+                        bind(bindings, pinVersion, edge.to(), entry.getValue());
+                    }
                 }
-                data = Map.copyOf(output);
-                emit(EventKinds.NODE_EXIT, runId, sessionId, currentId, payloadOf(data));
-                var nextId = nextNode(spec, currentId, data);
-                if (nextId != null) {
-                    data = consumeRoute(data);
-                }
-                currentId = nextId;
+                enqueueReady(spec, assembly, bindings, pinVersion, firedVersion, fired, queue,
+                        queued);
             }
-            emit(EventKinds.RUN_END, runId, sessionId, null,
-                    Map.of("status", "ok", "iterations", iterations));
-            return data;
+            var neverFired = spec.nodes().stream()
+                    .map(NodeSpec::id)
+                    .filter(id -> !fired.contains(id))
+                    .toList();
+            var payload = new LinkedHashMap<String, Object>();
+            payload.put("status", "ok");
+            payload.put("firings", firings);
+            payload.put("neverFired", neverFired);
+            emit(EventKinds.RUN_END, runId, sessionId, null, Map.copyOf(payload));
+            var result = new LinkedHashMap<>(bindings);
+            result.putAll(ownWrites);
+            return Map.copyOf(result);
         } catch (PipelineException e) {
             emit(EventKinds.RUN_END, runId, sessionId, null,
                     Map.of("status", "error", "error", String.valueOf(e.getMessage())));
@@ -120,37 +171,127 @@ public final class PipelineEngine {
         }
     }
 
-    private String nextNode(PipelineSpec spec, String currentId, Map<String, Object> data) {
-        List<EdgeSpec> out = spec.edges().stream()
-                .filter(e -> e.from().equals(currentId))
-                .toList();
-        if (out.isEmpty()) {
-            return null;
+    private Assembly assemble(PipelineSpec spec) {
+        var nodesById = new LinkedHashMap<String, NodeSpec>();
+        var nodeImpls = new HashMap<String, Node>();
+        var readsByNode = new HashMap<String, List<String>>();
+        var contextByNode = new HashMap<String, List<String>>();
+        var outEdges = new HashMap<PinRef, List<EdgeSpec>>();
+        for (var edge : spec.edges()) {
+            outEdges.computeIfAbsent(edge.from(), k -> new ArrayList<>()).add(edge);
         }
-        var route = data.get(EdgeKeys.ROUTE);
-        if (route != null) {
-            for (var edge : out) {
-                if (Objects.equals(edge.label(), String.valueOf(route))) {
-                    return edge.to();
-                }
+        try {
+            for (var nodeSpec : spec.nodes()) {
+                nodesById.put(nodeSpec.id(), nodeSpec);
+                var node = services.require(Node.class, nodeSpec.type());
+                nodeImpls.put(nodeSpec.id(), node);
+                var contract = node.contract();
+                readsByNode.put(nodeSpec.id(),
+                        contract.reads().stream().map(NodeContract.Key::name).toList());
+                contextByNode.put(nodeSpec.id(),
+                        contract.context().stream().map(NodeContract.Key::name).toList());
             }
+        } catch (Exception e) {
+            throw new PipelineException(
+                    "cannot assemble graph '" + spec.name() + "': " + e.getMessage(), e);
         }
-        for (var edge : out) {
-            if (edge.label() == null) {
-                return edge.to();
-            }
-        }
-        throw new PipelineException(
-                "no route from node '" + currentId + "' matches route value '" + route + "'");
+        return new Assembly(nodesById, nodeImpls, readsByNode, contextByNode, outEdges);
     }
 
-    private static Map<String, Object> consumeRoute(Map<String, Object> data) {
-        if (!data.containsKey(EdgeKeys.ROUTE)) {
-            return data;
+    /**
+     * Binds a value delivered to a pin (edge delivery or run input).
+     * Bindings are sticky (a later write overwrites the earlier one) and
+     * re-delivering an equal value does not count as new, so idempotent
+     * writes never re-trigger downstream nodes.
+     *
+     * @return true if the pin received a new value
+     */
+    private static boolean bind(Map<PinRef, Object> bindings, Map<PinRef, Integer> pinVersion,
+                                PinRef pin, Object value) {
+        var old = bindings.get(pin);
+        if (old != null && old.equals(value)) {
+            return false;
         }
-        var stripped = new LinkedHashMap<>(data);
-        stripped.remove(EdgeKeys.ROUTE);
-        return Map.copyOf(stripped);
+        bindings.put(pin, value);
+        pinVersion.merge(pin, 1, Integer::sum);
+        return true;
+    }
+
+    private static void enqueueReady(PipelineSpec spec, Assembly assembly,
+                                     Map<PinRef, Object> bindings, Map<PinRef, Integer> pinVersion,
+                                     Map<String, Integer> firedVersion, Set<String> fired,
+                                     ArrayDeque<String> queue, Set<String> queued) {
+        for (var node : spec.nodes()) {
+            var id = node.id();
+            if (!queued.contains(id) && isReady(id, assembly.readsByNode().get(id),
+                    assembly.contextByNode().get(id), pinVersion, firedVersion, fired)) {
+                queue.add(id);
+                queued.add(id);
+            }
+        }
+    }
+
+    /**
+     * Ready when every read and context pin carries a binding and the newest
+     * binding among the triggering reads is newer than the last firing.
+     * Context pins never trigger: they are bound-once companions (sticky
+     * configuration, loop-carried conversations), already fresh whenever a
+     * read fires.
+     */
+    private static boolean isReady(String id, List<String> reads, List<String> context,
+                                   Map<PinRef, Integer> pinVersion,
+                                   Map<String, Integer> firedVersion, Set<String> fired) {
+        if (reads.isEmpty()) {
+            return !fired.contains(id) && allBound(id, context, pinVersion);
+        }
+        if (!allBound(id, context, pinVersion)) {
+            return false;
+        }
+        var newest = readVersion(id, reads, pinVersion);
+        return newest > 0 && newest > firedVersion.getOrDefault(id, 0);
+    }
+
+    private static boolean allBound(String id, List<String> keys,
+                                    Map<PinRef, Integer> pinVersion) {
+        for (var key : keys) {
+            if (pinVersion.getOrDefault(new PinRef(id, key), 0) == 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** The newest binding version across a node's read pins; 0 if any is unbound. */
+    private static int readVersion(String id, List<String> reads,
+                                   Map<PinRef, Integer> pinVersion) {
+        var newest = 0;
+        for (var key : reads) {
+            var version = pinVersion.getOrDefault(new PinRef(id, key), 0);
+            if (version == 0) {
+                return 0;
+            }
+            newest = Math.max(newest, version);
+        }
+        return newest;
+    }
+
+    private static Map<String, Object> triggerInput(String id, List<String> reads,
+                                                    List<String> context,
+                                                    Map<PinRef, Object> bindings) {
+        var snapshot = new LinkedHashMap<String, Object>();
+        for (var key : reads) {
+            snapshot.put(key, bindings.get(new PinRef(id, key)));
+        }
+        for (var key : context) {
+            snapshot.put(key, bindings.get(new PinRef(id, key)));
+        }
+        return Map.copyOf(snapshot);
+    }
+
+    private record Assembly(Map<String, NodeSpec> nodesById, Map<String, Node> nodeImpls,
+                            Map<String, List<String>> readsByNode,
+                            Map<String, List<String>> contextByNode,
+                            Map<PinRef, List<EdgeSpec>> outEdges) {
     }
 
     private Map<String, Object> payloadOf(Map<String, Object> data) {

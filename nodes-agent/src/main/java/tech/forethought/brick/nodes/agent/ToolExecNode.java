@@ -17,7 +17,8 @@ import tech.forethought.brick.core.spi.Tool;
 
 /**
  * Executes the tool calls requested by the last assistant message and
- * appends their results to the conversation. Thread-safe (stateless).
+ * appends their results to the conversation (rewriting the {@code "messages"}
+ * pin). Thread-safe (stateless).
  */
 public final class ToolExecNode implements Node {
 
@@ -41,7 +42,7 @@ public final class ToolExecNode implements Node {
         var messages = (List<Message>) input.get(EdgeKeys.MESSAGES);
         if (messages == null || messages.isEmpty()) {
             throw new IllegalArgumentException(
-                    "tool-exec node: edge data is missing key 'messages'");
+                    "tool-exec node: input is missing key '" + EdgeKeys.MESSAGES + "'");
         }
         if (!(messages.getLast() instanceof Message.AssistantMessage last)) {
             throw new IllegalArgumentException(
@@ -56,8 +57,8 @@ public final class ToolExecNode implements Node {
             context.events().emit(EventKinds.MESSAGE_APPENDED,
                     Map.of("message", MessageCodec.toMap(result)));
         }
-        var out = new LinkedHashMap<>(input);
+        var out = new LinkedHashMap<String, Object>();
         out.put(EdgeKeys.MESSAGES, List.copyOf(history));
-        return out;
+        return Map.copyOf(out);
     }
 }

@@ -4,17 +4,21 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.NodeContext;
 import tech.forethought.brick.core.spi.NodeContract;
+import tech.forethought.brick.core.spi.NodeContract.Key;
+import tech.forethought.brick.core.spi.NodeContract.ValueType;
 
 /**
- * Producer node: loads a .properties file and puts its entries onto the edge
- * data (existing keys are overwritten). Config: {@code "path"} (required);
- * relative paths resolve against the process working directory. Thread-safe
- * (stateless).
+ * Producer node: loads a .properties file and writes its entries as one MAP
+ * pin, so a single wire carries the whole configuration object. Config:
+ * {@code "path"} (required; relative paths resolve against the process
+ * working directory) and {@code "as"} (the pin name, default {@code "llm"}).
+ * Thread-safe (stateless).
  */
 public final class ConfigLoaderNode implements Node {
 
@@ -28,8 +32,8 @@ public final class ConfigLoaderNode implements Node {
 
     @Override
     public NodeContract contract() {
-        // written names come from the properties file, known only at run time
-        return NodeContract.dynamicKeys();
+        // the pin name comes from config "as", known only at run time
+        return new NodeContract(List.of(), List.of(new Key("llm", ValueType.MAP)), true);
     }
 
     @Override
@@ -46,10 +50,12 @@ public final class ConfigLoaderNode implements Node {
             throw new IllegalArgumentException(
                     "config-loader node: cannot read '" + file + "': " + e.getMessage(), e);
         }
-        var out = new LinkedHashMap<>(input);
+        var config = new LinkedHashMap<String, Object>();
         for (var name : properties.stringPropertyNames()) {
-            out.put(name, properties.getProperty(name));
+            config.put(name, properties.getProperty(name));
         }
-        return out;
+        var out = new LinkedHashMap<String, Object>();
+        out.put(String.valueOf(context.config().getOrDefault("as", "llm")), Map.copyOf(config));
+        return Map.copyOf(out);
     }
 }

@@ -16,8 +16,9 @@ import tech.forethought.brick.core.spi.Tool;
 /**
  * Assembles conversation context: prepends the configured system prompt
  * (config {@code "systemPrompt"}, optional) and resolves tool definitions by
- * name (config {@code "tools"}: list of tool names, optional). Thread-safe
- * (stateless).
+ * name (config {@code "tools"}: list of tool names, optional). Reads and
+ * rewrites the {@code "messages"} pin; writes the {@code "tools"} pin.
+ * Thread-safe (stateless).
  */
 public final class ContextPreprocessNode implements Node {
 
@@ -39,7 +40,7 @@ public final class ContextPreprocessNode implements Node {
     @Override
     @SuppressWarnings("unchecked")
     public Map<String, Object> execute(Map<String, Object> input, NodeContext context) {
-        var out = new LinkedHashMap<>(input);
+        var out = new LinkedHashMap<String, Object>();
         var messages = new ArrayList<>(
                 (List<Message>) input.getOrDefault(EdgeKeys.MESSAGES, List.of()));
         var systemPrompt = context.config().get("systemPrompt");
@@ -54,6 +55,6 @@ public final class ContextPreprocessNode implements Node {
                 .map(name -> context.services().require(Tool.class, name).definition())
                 .toList();
         out.put(AgentKeys.TOOL_DEFINITIONS, List.copyOf(definitions));
-        return out;
+        return Map.copyOf(out);
     }
 }

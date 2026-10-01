@@ -3,8 +3,6 @@ package tech.forethought.brick.nodes.basic;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import tech.forethought.brick.core.spi.EdgeKeys;
 import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.NodeContext;
 import tech.forethought.brick.core.spi.NodeContract;
@@ -12,9 +10,11 @@ import tech.forethought.brick.core.spi.NodeContract.Key;
 import tech.forethought.brick.core.spi.NodeContract.ValueType;
 
 /**
- * Gateway node: routes {@code "true"} or {@code "false"} by comparing an
- * input key with an expected value. Config: {@code "key"} (required),
- * {@code "equals"} (expected value). Thread-safe (stateless).
+ * Gateway node: selective delivery by truthiness. Reads {@code control}
+ * (BOOLEAN) and {@code value} (ANY); the output map carries {@code value}
+ * under {@code "true"} or {@code "false"} only — the engine delivers along
+ * out-edges per key, so the untaken branch's pins never receive a value and
+ * their subgraph never fires. No config. Thread-safe (stateless).
  */
 public final class IfNode implements Node {
 
@@ -28,20 +28,19 @@ public final class IfNode implements Node {
 
     @Override
     public NodeContract contract() {
-        // the compared key's name comes from config "key", so reads are not enumerable
-        return new NodeContract(List.of(),
-                List.of(new Key(EdgeKeys.ROUTE, ValueType.STRING)), true);
+        return new NodeContract(
+                List.of(new Key("control", ValueType.BOOLEAN), new Key("value", ValueType.ANY)),
+                List.of(new Key("true", ValueType.ANY), new Key("false", ValueType.ANY)), false);
     }
 
     @Override
     public Map<String, Object> execute(Map<String, Object> input, NodeContext context) {
-        var key = context.config().get("key");
-        if (key == null) {
-            throw new IllegalArgumentException("if node requires config 'key'");
+        if (!input.containsKey("control")) {
+            throw new IllegalArgumentException("if node: input is missing key 'control'");
         }
-        var matched = Objects.equals(input.get(String.valueOf(key)), context.config().get("equals"));
-        var out = new LinkedHashMap<>(input);
-        out.put(EdgeKeys.ROUTE, String.valueOf(matched));
-        return out;
+        var out = new LinkedHashMap<String, Object>();
+        out.put(Boolean.TRUE.equals(input.get("control")) ? "true" : "false",
+                input.get("value"));
+        return Map.copyOf(out);
     }
 }

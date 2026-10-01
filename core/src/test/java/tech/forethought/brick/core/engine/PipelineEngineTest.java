@@ -5,14 +5,18 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
+import tech.forethought.brick.core.event.EventListener;
+import tech.forethought.brick.core.event.TraceEvent;
 import tech.forethought.brick.core.spec.EdgeSpec;
 import tech.forethought.brick.core.spec.NodeSpec;
+import tech.forethought.brick.core.spec.PinRef;
 import tech.forethought.brick.core.spec.PipelineSpec;
-import tech.forethought.brick.core.spi.EdgeKeys;
 import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.NodeContext;
 import tech.forethought.brick.core.spi.NodeContract;
@@ -22,7 +26,7 @@ import tech.forethought.brick.core.testkit.ManualServices;
 
 class PipelineEngineTest {
 
-    /** Test node: puts config "key" = "value" into the data. */
+    /** Test node: zero reads, writes config "key" = "value". */
     static final class PutNode implements Node {
         @Override
         public String type() {
@@ -37,35 +41,58 @@ class PipelineEngineTest {
 
         @Override
         public Map<String, Object> execute(Map<String, Object> input, NodeContext context) {
-            var out = new LinkedHashMap<>(input);
+            var out = new LinkedHashMap<String, Object>();
             out.put(String.valueOf(context.config().get("key")), context.config().get("value"));
             return out;
         }
     }
 
-    /** Test node: routes by the string form of the input value at config "key". */
-    static final class RouteByNode implements Node {
+    /** Test node: passes its "in" read through to "out". */
+    static final class ForwardNode implements Node {
         @Override
         public String type() {
-            return "route-by";
+            return "forward";
         }
 
         @Override
         public NodeContract contract() {
-            return new NodeContract(List.of(),
-                    List.of(new Key(EdgeKeys.ROUTE, ValueType.STRING)), true);
+            return new NodeContract(List.of(new Key("in", ValueType.ANY)),
+                    List.of(new Key("out", ValueType.ANY)), false);
         }
 
         @Override
         public Map<String, Object> execute(Map<String, Object> input, NodeContext context) {
-            var out = new LinkedHashMap<>(input);
-            out.put(EdgeKeys.ROUTE,
-                    String.valueOf(input.get(String.valueOf(context.config().get("key")))));
+            var out = new LinkedHashMap<String, Object>();
+            out.put("out", input.get("in"));
             return out;
         }
     }
 
-    /** Test node: increments "n" and routes "again" until it reaches config "until". */
+    /** Test node: selective delivery — writes "true" or "false" carrying "value". */
+    static final class GateNode implements Node {
+        @Override
+        public String type() {
+            return "gate";
+        }
+
+        @Override
+        public NodeContract contract() {
+            return new NodeContract(
+                    List.of(new Key("control", ValueType.ANY), new Key("value", ValueType.ANY)),
+                    List.of(new Key("true", ValueType.ANY), new Key("false", ValueType.ANY)),
+                    false);
+        }
+
+        @Override
+        public Map<String, Object> execute(Map<String, Object> input, NodeContext context) {
+            var out = new LinkedHashMap<String, Object>();
+            out.put(Boolean.TRUE.equals(input.get("control")) ? "true" : "false",
+                    input.get("value"));
+            return out;
+        }
+    }
+
+    /** Test node: counts up on "n"; delivers "again" only while below config "until". */
     static final class CountNode implements Node {
         @Override
         public String type() {
@@ -75,17 +102,63 @@ class PipelineEngineTest {
         @Override
         public NodeContract contract() {
             return new NodeContract(List.of(new Key("n", ValueType.NUMBER)),
-                    List.of(new Key("n", ValueType.NUMBER),
-                            new Key(EdgeKeys.ROUTE, ValueType.STRING)), false);
+                    List.of(new Key("n", ValueType.NUMBER), new Key("again", ValueType.NUMBER)),
+                    false);
         }
 
         @Override
         public Map<String, Object> execute(Map<String, Object> input, NodeContext context) {
-            var n = ((Number) input.getOrDefault("n", 0)).intValue() + 1;
+            var n = ((Number) input.get("n")).intValue() + 1;
             var until = ((Number) context.config().get("until")).intValue();
-            var out = new LinkedHashMap<>(input);
+            var out = new LinkedHashMap<String, Object>();
             out.put("n", n);
-            out.put(EdgeKeys.ROUTE, n < until ? "again" : "done");
+            if (n < until) {
+                out.put("again", n);
+            }
+            return out;
+        }
+    }
+
+    /** Test node: re-fires on "tick"; "memory" is a bound-once context pin. */
+    static final class ContextNode implements Node {
+        @Override
+        public String type() {
+            return "context";
+        }
+
+        @Override
+        public NodeContract contract() {
+            return new NodeContract(List.of(new Key("tick", ValueType.NUMBER)),
+                    List.of(new Key("memory", ValueType.STRING)),
+                    List.of(new Key("out", ValueType.STRING)), false);
+        }
+
+        @Override
+        public Map<String, Object> execute(Map<String, Object> input, NodeContext context) {
+            var out = new LinkedHashMap<String, Object>();
+            out.put("out", input.get("tick") + (String) input.get("memory"));
+            return out;
+        }
+    }
+
+    /** Test node: writes config key/value once "go" arrives. */
+    static final class GatedPutNode implements Node {
+        @Override
+        public String type() {
+            return "gated-put";
+        }
+
+        @Override
+        public NodeContract contract() {
+            // "go" gates the single firing; it is context, not a trigger
+            return new NodeContract(List.of(),
+                    List.of(new Key("go", ValueType.ANY)), List.of(), true);
+        }
+
+        @Override
+        public Map<String, Object> execute(Map<String, Object> input, NodeContext context) {
+            var out = new LinkedHashMap<String, Object>();
+            out.put(String.valueOf(context.config().get("key")), context.config().get("value"));
             return out;
         }
     }
@@ -117,21 +190,24 @@ class PipelineEngineTest {
 
         @Override
         public NodeContract contract() {
-            return NodeContract.empty();
+            return new NodeContract(List.of(new Key("in", ValueType.ANY)), List.of(), false);
         }
 
         @Override
         public Map<String, Object> execute(Map<String, Object> input, NodeContext context) {
             input.put("hacked", true);
-            return input;
+            return Map.of();
         }
     }
 
     private static ManualServices services() {
         return new ManualServices()
                 .with(Node.class, "put", new PutNode())
-                .with(Node.class, "route-by", new RouteByNode())
+                .with(Node.class, "forward", new ForwardNode())
+                .with(Node.class, "gate", new GateNode())
                 .with(Node.class, "count", new CountNode())
+                .with(Node.class, "context", new ContextNode())
+                .with(Node.class, "gated-put", new GatedPutNode())
                 .with(Node.class, "fail", new FailNode())
                 .with(Node.class, "mutator", new MutatorNode());
     }
@@ -140,16 +216,30 @@ class PipelineEngineTest {
         return new NodeSpec(id, type, config);
     }
 
+    private static EdgeSpec edge(String fromNode, String fromKey, String toNode, String toKey) {
+        return new EdgeSpec(new PinRef(fromNode, fromKey), new PinRef(toNode, toKey));
+    }
+
     @Test
     void runsLinearChain() {
         var spec = new PipelineSpec("linear",
                 List.of(node("a", "put", Map.of("key", "x", "value", 1)),
-                        node("b", "put", Map.of("key", "y", "value", 2))),
-                List.of(new EdgeSpec("a", "b", null)),
-                "a");
+                        node("b", "forward", Map.of())),
+                List.of(edge("a", "x", "b", "in")),
+                List.of(), List.of());
         var result = new PipelineEngine(services()).run(spec, Map.of());
-        assertEquals(1, result.get("x"));
-        assertEquals(2, result.get("y"));
+        assertEquals(1, result.get(new PinRef("b", "out")));
+    }
+
+    @Test
+    void runInputIsInjectedIntoDeclaredInputPins() {
+        var spec = new PipelineSpec("inject",
+                List.of(node("b", "forward", Map.of())),
+                List.of(),
+                List.of(new PinRef("b", "in")), List.of());
+        var result = new PipelineEngine(services()).run(spec,
+                Map.of(new PinRef("b", "in"), "hello"));
+        assertEquals("hello", result.get(new PinRef("b", "out")));
     }
 
     @Test
@@ -157,51 +247,79 @@ class PipelineEngineTest {
         var spec = new PipelineSpec("single",
                 List.of(node("only", "put", Map.of("key", "x", "value", 1))),
                 List.of(),
-                "only");
-        var result = new PipelineEngine(services()).run(spec, Map.of("seed", true));
-        assertEquals(true, result.get("seed"));
-        assertEquals(1, result.get("x"));
-    }
-
-    @Test
-    void routesByLabelAndStripsRouteKey() {
-        var spec = new PipelineSpec("branch",
-                List.of(node("start", "put", Map.of("key", "flag", "value", "left")),
-                        node("route", "route-by", Map.of("key", "flag")),
-                        node("left", "put", Map.of("key", "side", "value", "L")),
-                        node("right", "put", Map.of("key", "side", "value", "R"))),
-                List.of(new EdgeSpec("start", "route", null),
-                        new EdgeSpec("route", "left", "left"),
-                        new EdgeSpec("route", "right", "right")),
-                "start");
+                List.of(), List.of());
         var result = new PipelineEngine(services()).run(spec, Map.of());
-        assertEquals("L", result.get("side"));
-        assertFalse(result.containsKey(EdgeKeys.ROUTE));
+        assertEquals(1, result.get(new PinRef("only", "x")));
     }
 
     @Test
-    void followsBackEdgeUntilRouteChanges() {
+    void deliversSelectivelyDownTheTakenBranchOnly() {
+        var spec = new PipelineSpec("branch",
+                List.of(node("gate", "gate", Map.of()),
+                        node("left", "forward", Map.of()),
+                        node("right", "forward", Map.of())),
+                List.of(edge("gate", "true", "left", "in"),
+                        edge("gate", "false", "right", "in")),
+                List.of(), List.of());
+        var result = new PipelineEngine(services()).run(spec, Map.of(
+                new PinRef("gate", "control"), true,
+                new PinRef("gate", "value"), "L"));
+        assertEquals("L", result.get(new PinRef("left", "out")));
+        assertFalse(result.containsKey(new PinRef("right", "out")));
+    }
+
+    @Test
+    void unselectedBranchNodeNeverFires() {
+        var spec = new PipelineSpec("half-dead",
+                List.of(node("gate", "gate", Map.of()),
+                        node("left", "forward", Map.of()),
+                        node("right", "forward", Map.of())),
+                List.of(edge("gate", "true", "left", "in"),
+                        edge("gate", "false", "right", "in")),
+                List.of(), List.of());
+        var result = new PipelineEngine(services()).run(spec, Map.of(
+                new PinRef("gate", "control"), true,
+                new PinRef("gate", "value"), "L"));
+        assertEquals("L", result.get(new PinRef("left", "out")));
+        assertFalse(result.containsKey(new PinRef("right", "out")));
+    }
+
+    @Test
+    void followsBackEdgeUntilDeliveryStops() {
         var spec = new PipelineSpec("loop",
                 List.of(node("count", "count", Map.of("until", 3)),
-                        node("end", "put", Map.of("key", "finished", "value", true))),
-                List.of(new EdgeSpec("count", "count", "again"),
-                        new EdgeSpec("count", "end", "done")),
-                "count");
+                        node("end", "forward", Map.of())),
+                List.of(edge("count", "again", "count", "n"),
+                        edge("count", "n", "end", "in")),
+                List.of(new PinRef("count", "n")), List.of());
+        var result = new PipelineEngine(services()).run(spec,
+                Map.of(new PinRef("count", "n"), 0));
+        assertEquals(3, result.get(new PinRef("count", "n")));
+        assertEquals(3, result.get(new PinRef("end", "out")));
+    }
+
+    @Test
+    void multipleInEdgesOverwriteAndRefire() {
+        var spec = new PipelineSpec("join",
+                List.of(node("a", "put", Map.of("key", "x", "value", 1)),
+                        node("b", "put", Map.of("key", "x", "value", 2)),
+                        node("c", "forward", Map.of())),
+                List.of(edge("a", "x", "c", "in"), edge("b", "x", "c", "in")),
+                List.of(), List.of());
         var result = new PipelineEngine(services()).run(spec, Map.of());
-        assertEquals(3, result.get("n"));
-        assertEquals(true, result.get("finished"));
+        assertEquals(2, result.get(new PinRef("c", "out")));
     }
 
     @Test
     void loopProtectionKillsEndlessRuns() {
         var spec = new PipelineSpec("endless",
                 List.of(node("count", "count", Map.of("until", 100))),
-                List.of(new EdgeSpec("count", "count", "again"),
-                        new EdgeSpec("count", "count", "done")),
-                "count");
+                List.of(edge("count", "again", "count", "n")),
+                List.of(new PinRef("count", "n")), List.of());
         var e = assertThrows(PipelineException.class,
-                () -> new PipelineEngine(services()).run(spec, Map.of()));
+                () -> new PipelineEngine(services()).run(spec, Map.of(new PinRef("count", "n"), 0)));
         assertTrue(e.getMessage().contains("loop protection"));
+        assertTrue(e.getMessage().contains("maxFirings"));
     }
 
     @Test
@@ -209,7 +327,7 @@ class PipelineEngineTest {
         var spec = new PipelineSpec("failing",
                 List.of(node("bad", "fail", Map.of())),
                 List.of(),
-                "bad");
+                List.of(), List.of());
         var e = assertThrows(PipelineException.class,
                 () -> new PipelineEngine(services()).run(spec, Map.of()));
         assertTrue(e.getMessage().contains("bad"));
@@ -221,21 +339,10 @@ class PipelineEngineTest {
         var spec = new PipelineSpec("unknown",
                 List.of(node("mystery", "no-such-type", Map.of())),
                 List.of(),
-                "mystery");
+                List.of(), List.of());
         var e = assertThrows(PipelineException.class,
                 () -> new PipelineEngine(services()).run(spec, Map.of()));
         assertTrue(e.getMessage().contains("no-such-type"));
-    }
-
-    @Test
-    void unroutableTransitionFails() {
-        var spec = new PipelineSpec("unroutable",
-                List.of(node("route", "route-by", Map.of("key", "missing")),
-                        node("left", "put", Map.of("key", "x", "value", 1))),
-                List.of(new EdgeSpec("route", "left", "left")),
-                "route");
-        assertThrows(PipelineException.class,
-                () -> new PipelineEngine(services()).run(spec, Map.of()));
     }
 
     @Test
@@ -243,18 +350,42 @@ class PipelineEngineTest {
         var spec = new PipelineSpec("immutability",
                 List.of(node("evil", "mutator", Map.of())),
                 List.of(),
-                "evil");
+                List.of(new PinRef("evil", "in")), List.of());
         var e = assertThrows(PipelineException.class,
-                () -> new PipelineEngine(services()).run(spec, Map.of()));
+                () -> new PipelineEngine(services()).run(spec, Map.of(new PinRef("evil", "in"), 1)));
         assertTrue(e.getMessage().contains("evil"));
+    }
+
+    @Test
+    void contextPinChangesDoNotRefire() {
+        var events = new ArrayList<TraceEvent>();
+        EventListener recorder = events::add;
+        var spec = new PipelineSpec("ctx",
+                List.of(node("mem", "put", Map.of("key", "memory", "value", "a")),
+                        node("mem2", "gated-put", Map.of("key", "memory", "value", "b")),
+                        node("tick2", "gated-put", Map.of("key", "tick", "value", 2)),
+                        node("c", "context", Map.of())),
+                List.of(edge("mem", "memory", "c", "memory"),
+                        edge("c", "out", "mem2", "go"),
+                        edge("c", "out", "tick2", "go"),
+                        edge("mem2", "memory", "c", "memory"),
+                        edge("tick2", "tick", "c", "tick")),
+                List.of(new PinRef("c", "tick")), List.of());
+        var engine = new PipelineEngine(services(),
+                new EngineConfig(List.of(recorder), false, Set.of()));
+        var result = engine.run(spec, Map.of(new PinRef("c", "tick"), 1));
+        assertEquals("2b", result.get(new PinRef("c", "out")));
+        // mem, c, mem2, tick2, c: the mid-run memory overwrite must not
+        // re-fire c on its own
+        assertEquals(5, events.getLast().payload().get("firings"));
     }
 
     @Test
     void specErrorsAreReportedBeforeRunning() {
         var spec = new PipelineSpec("broken",
                 List.of(node("a", "put", Map.of("key", "x", "value", 1))),
-                List.of(new EdgeSpec("a", "ghost", null)),
-                "a");
+                List.of(edge("a", "x", "ghost", "in")),
+                List.of(), List.of());
         var e = assertThrows(PipelineException.class,
                 () -> new PipelineEngine(services()).run(spec, Map.of()));
         assertTrue(e.getMessage().contains("ghost"));

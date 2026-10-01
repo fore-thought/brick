@@ -3,9 +3,10 @@ package tech.forethought.brick.core.spi;
 import java.util.Map;
 
 /**
- * A node on the graph — the single executable unit. The engine calls nodes
- * and routes by edges; a node receives an immutable input snapshot and
- * returns a new immutable snapshot.
+ * A node on the graph — the single executable unit. The engine fires a node
+ * when its declared reads all carry a binding; the node receives an
+ * immutable snapshot of those bindings and returns only the keys it
+ * produces, which the engine delivers along the node's out-edges.
  *
  * <p>Implementations are discovered via {@code ServiceLoader}, must have a
  * public no-arg constructor, and must be stateless and thread-safe.
@@ -19,9 +20,9 @@ public interface Node {
     String type();
 
     /**
-     * Declares this node's edge-data interface (see {@link NodeContract}).
-     * The engine neither consumes nor enforces the declaration; editors and
-     * future diagnostics do.
+     * Declares this node's pin interface (see {@link NodeContract}). The
+     * engine consumes {@code reads} to derive triggering; editors and
+     * diagnostics consume the rest.
      *
      * @return the contract, never null
      */
@@ -30,10 +31,11 @@ public interface Node {
     /**
      * Executes this node.
      *
-     * @param input   immutable snapshot of the edge data; never modified by
-     *                the node
+     * @param input   immutable snapshot of this node's input bindings (its
+     *                contract reads); never modified by the node
      * @param context run identity, node configuration, and service lookup
-     * @return the new edge data, never null
+     * @return the produced key-value pairs, never null; only these keys are
+     *         delivered onward
      */
     Map<String, Object> execute(Map<String, Object> input, NodeContext context);
 }

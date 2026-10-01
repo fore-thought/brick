@@ -1,7 +1,5 @@
 package tech.forethought.brick.nodes.agent;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import tech.forethought.brick.core.event.EventKinds;
@@ -15,9 +13,9 @@ import tech.forethought.brick.core.spi.NodeContract.Key;
 import tech.forethought.brick.core.spi.NodeContract.ValueType;
 
 /**
- * Entry node of the default chain: wraps the run input (key
- * {@code "input"}) into a user message appended to the conversation.
- * Thread-safe (stateless).
+ * Entry node of the default chain: wraps the run input (read pin
+ * {@code "text"}) into a user message — the first entry of a fresh
+ * conversation. Thread-safe (stateless).
  */
 public final class InputNode implements Node {
 
@@ -36,20 +34,14 @@ public final class InputNode implements Node {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public Map<String, Object> execute(Map<String, Object> input, NodeContext context) {
-        var text = input.get(AgentKeys.INPUT);
-        if (text == null) {
-            throw new IllegalArgumentException("input node: edge data is missing key 'input'");
+        if (!input.containsKey(AgentKeys.INPUT)) {
+            throw new IllegalArgumentException(
+                    "input node: input is missing key '" + AgentKeys.INPUT + "'");
         }
-        var message = new Message.UserMessage(String.valueOf(text));
-        var messages = new ArrayList<>(
-                (List<Message>) input.getOrDefault(EdgeKeys.MESSAGES, List.of()));
-        messages.add(message);
+        var message = new Message.UserMessage(String.valueOf(input.get(AgentKeys.INPUT)));
         context.events().emit(EventKinds.MESSAGE_APPENDED,
                 Map.of("message", MessageCodec.toMap(message)));
-        var out = new LinkedHashMap<>(input);
-        out.put(EdgeKeys.MESSAGES, List.copyOf(messages));
-        return out;
+        return Map.of(EdgeKeys.MESSAGES, List.of(message));
     }
 }

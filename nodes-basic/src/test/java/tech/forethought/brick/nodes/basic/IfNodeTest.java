@@ -1,12 +1,12 @@
 package tech.forethought.brick.nodes.basic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import tech.forethought.brick.core.event.EventEmitter;
-import tech.forethought.brick.core.spi.EdgeKeys;
 import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.NodeContext;
 import tech.forethought.brick.core.testkit.ManualServices;
@@ -21,34 +21,33 @@ public final class IfNodeTest extends NodeContractTest {
 
     @Override
     protected Map<String, Object> sampleInput() {
-        return Map.of("flag", true);
-    }
-
-    @Override
-    protected Map<String, Object> sampleConfig() {
-        return Map.of("key", "flag", "equals", true);
+        return Map.of("control", true, "value", "payload");
     }
 
     private Map<String, Object> run(Map<String, Object> input) {
-        var context = new NodeContext("run", "n", sampleConfig(), new ManualServices(), EventEmitter.noop());
+        var context = new NodeContext("run", "n", Map.of(), new ManualServices(),
+                EventEmitter.noop());
         return subject().execute(input, context);
     }
 
     @Test
-    void routesTrueWhenValueMatches() {
-        assertEquals("true", run(Map.of("flag", true)).get(EdgeKeys.ROUTE));
+    void deliversUnderTrueOnlyWhenControlIsTrue() {
+        var result = run(Map.of("control", true, "value", "payload"));
+        assertEquals(Map.of("true", "payload"), result);
+        assertFalse(result.containsKey("false"));
     }
 
     @Test
-    void routesFalseWhenValueDiffers() {
-        assertEquals("false", run(Map.of("flag", false)).get(EdgeKeys.ROUTE));
+    void deliversUnderFalseOnlyWhenControlIsNotTrue() {
+        var result = run(Map.of("control", false, "value", "payload"));
+        assertEquals(Map.of("false", "payload"), result);
+        assertFalse(result.containsKey("true"));
     }
 
     @Test
-    void missingKeyConfigFailsClearly() {
-        var context = new NodeContext("run", "n", Map.of(), new ManualServices(), EventEmitter.noop());
+    void missingControlFailsClearly() {
         var e = assertThrows(IllegalArgumentException.class,
-                () -> subject().execute(Map.of(), context));
-        assertEquals("if node requires config 'key'", e.getMessage());
+                () -> run(Map.of("value", "payload")));
+        assertEquals("if node: input is missing key 'control'", e.getMessage());
     }
 }

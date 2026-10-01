@@ -5,7 +5,7 @@ import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.NodeContext;
 import tech.forethought.brick.core.spi.NodeContract;
 
-/** Passes edge data through unchanged. Thread-safe (stateless). */
+/** Passes its input bindings through unchanged. Thread-safe (stateless). */
 public final class EchoNode implements Node {
 
     @Override

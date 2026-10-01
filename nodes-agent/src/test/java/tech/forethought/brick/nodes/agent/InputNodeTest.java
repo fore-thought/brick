@@ -34,10 +34,10 @@ public final class InputNodeTest extends NodeContractTest {
     }
 
     @Test
-    void missingInputKeyFailsClearly() {
+    void missingTextPinFailsClearly() {
         var e = assertThrows(IllegalArgumentException.class,
                 () -> subject().execute(Map.of(), context()));
-        assertTrue(e.getMessage().contains("'input'"));
+        assertTrue(e.getMessage().contains("'text'"));
     }
 
     @Test

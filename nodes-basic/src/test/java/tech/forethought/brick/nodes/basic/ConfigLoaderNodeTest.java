@@ -1,6 +1,7 @@
 package tech.forethought.brick.nodes.basic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -41,18 +42,30 @@ public final class ConfigLoaderNodeTest extends NodeContractTest {
     }
 
     @Test
-    void loadsEntriesOntoEdgeData() {
-        var context = new NodeContext("run", "n", sampleConfig(), new ManualServices(), EventEmitter.noop());
-        var result = subject().execute(Map.of("existing", 1), context);
-        assertEquals("mock", result.get("llm.protocol"));
-        assertEquals("test-model", result.get("llm.model"));
-        assertEquals(1, result.get("existing"));
+    @SuppressWarnings("unchecked")
+    void loadsEntriesAsOneMapPin() {
+        var context = new NodeContext("run", "n", sampleConfig(), new ManualServices(),
+                EventEmitter.noop());
+        var result = subject().execute(Map.of(), context);
+        var config = assertInstanceOf(Map.class, result.get("llm"));
+        assertEquals("mock", ((Map<String, Object>) config).get("llm.protocol"));
+        assertEquals("test-model", ((Map<String, Object>) config).get("llm.model"));
+    }
+
+    @Test
+    void pinNameComesFromConfigAs() {
+        var context = new NodeContext("run", "n",
+                Map.of("path", propertiesFile.toString(), "as", "model"), new ManualServices(),
+                EventEmitter.noop());
+        var result = subject().execute(Map.of(), context);
+        assertTrue(result.containsKey("model"));
     }
 
     @Test
     void missingFileFailsClearly() {
         var context = new NodeContext("run", "n",
-                Map.of("path", dir.resolve("nope.properties").toString()), new ManualServices(), EventEmitter.noop());
+                Map.of("path", dir.resolve("nope.properties").toString()), new ManualServices(),
+                EventEmitter.noop());
         var e = assertThrows(IllegalArgumentException.class,
                 () -> subject().execute(Map.of(), context));
         assertTrue(e.getMessage().contains("nope.properties"));
@@ -60,7 +73,8 @@ public final class ConfigLoaderNodeTest extends NodeContractTest {
 
     @Test
     void missingPathConfigFailsClearly() {
-        var context = new NodeContext("run", "n", Map.of(), new ManualServices(), EventEmitter.noop());
+        var context = new NodeContext("run", "n", Map.of(), new ManualServices(),
+                EventEmitter.noop());
         var e = assertThrows(IllegalArgumentException.class,
                 () -> subject().execute(Map.of(), context));
         assertTrue(e.getMessage().contains("'path'"));

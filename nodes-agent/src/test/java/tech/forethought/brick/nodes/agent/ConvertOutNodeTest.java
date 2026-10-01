@@ -18,6 +18,12 @@ import tech.forethought.brick.core.testkit.NodeContractTest;
 
 public final class ConvertOutNodeTest extends NodeContractTest {
 
+    private static final Map<String, Object> LLM = Map.of(
+            "llm.protocol", "mock",
+            "llm.base-url", "http://localhost",
+            "llm.api-key", "none",
+            "llm.model", "mock-model");
+
     @Override
     protected Node subject() {
         return new ConvertOutNode();
@@ -32,10 +38,7 @@ public final class ConvertOutNodeTest extends NodeContractTest {
     protected Map<String, Object> sampleInput() {
         return Map.of(
                 EdgeKeys.MESSAGES, List.of(new Message.UserMessage("hi")),
-                "llm.protocol", "mock",
-                "llm.base-url", "http://localhost",
-                "llm.api-key", "none",
-                "llm.model", "mock-model");
+                ConvertOutNode.LLM_PIN, LLM);
     }
 
     @Test
@@ -46,9 +49,20 @@ public final class ConvertOutNodeTest extends NodeContractTest {
     }
 
     @Test
-    void missingModelConfigFailsClearly() {
+    void missingLlmPinFailsClearly() {
         var e = assertThrows(IllegalArgumentException.class,
-                () -> subject().execute(Map.of(EdgeKeys.MESSAGES, List.of()), context()));
-        assertTrue(e.getMessage().contains("llm.protocol"));
+                () -> subject().execute(
+                        Map.of(EdgeKeys.MESSAGES, List.of(new Message.UserMessage("hi"))),
+                        context()));
+        assertTrue(e.getMessage().contains("'llm'"));
+    }
+
+    @Test
+    void incompleteLlmConfigFailsClearly() {
+        var e = assertThrows(IllegalArgumentException.class,
+                () -> subject().execute(Map.of(
+                        EdgeKeys.MESSAGES, List.of(new Message.UserMessage("hi")),
+                        ConvertOutNode.LLM_PIN, Map.of("llm.protocol", "mock")), context()));
+        assertTrue(e.getMessage().contains("llm.base-url"));
     }
 }
