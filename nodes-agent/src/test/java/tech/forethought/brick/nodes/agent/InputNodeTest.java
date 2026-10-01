@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,30 @@ public final class InputNodeTest extends NodeContractTest {
         var result = subject().execute(sampleInput(), context());
         var messages = (List<Message>) result.get(EdgeKeys.MESSAGES);
         assertEquals(List.of(new Message.UserMessage("hi")), messages);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void splicesRunInputOntoInjectedHistory() {
+        var input = Map.of(
+                AgentKeys.INPUT, "hi",
+                AgentKeys.HISTORY, List.of(
+                        new Message.UserMessage("earlier question"),
+                        new Message.AssistantMessage("earlier answer", List.of())));
+        var messages = (List<Message>) subject().execute(input, context()).get(EdgeKeys.MESSAGES);
+        assertEquals(List.of(
+                new Message.UserMessage("earlier question"),
+                new Message.AssistantMessage("earlier answer", List.of()),
+                new Message.UserMessage("hi")), messages);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void doesNotMutateInjectedHistory() {
+        var history = new ArrayList<>(List.of(new Message.UserMessage("earlier")));
+        var input = Map.<String, Object>of(AgentKeys.INPUT, "hi", AgentKeys.HISTORY, history);
+        subject().execute(input, context());
+        assertEquals(1, history.size());
     }
 
     @Test

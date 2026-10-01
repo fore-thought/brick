@@ -87,7 +87,8 @@ class DefaultSpecsTest {
 
         var result = new PipelineEngine(services())
                 .run(DefaultSpecs.chat(propertiesFile.toString()),
-                        Map.of(new PinRef("input", AgentKeys.INPUT), "hi"));
+                        Map.of(new PinRef("input", AgentKeys.INPUT), "hi",
+                                new PinRef("input", AgentKeys.HISTORY), List.of()));
 
         assertEquals("done", result.get(new PinRef("out", AgentKeys.OUTPUT)));
         assertEquals(false, result.get(new PinRef("convert-back", AgentKeys.HAS_TOOL_CALLS)));
@@ -99,5 +100,32 @@ class DefaultSpecsTest {
         var last = assertInstanceOf(Message.AssistantMessage.class, messages.get(3));
         assertEquals("done", last.content());
         assertFalse(result.containsKey(new PinRef("out", "true")));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void defaultChatGraphCarriesInjectedHistory() throws IOException {
+        var propertiesFile = dir.resolve("llm.properties");
+        Files.writeString(propertiesFile, """
+                llm.protocol=mock
+                llm.base-url=http://localhost
+                llm.api-key=none
+                llm.model=mock-model
+                """);
+
+        var history = List.<Message>of(
+                new Message.UserMessage("earlier question"),
+                new Message.AssistantMessage("earlier answer", List.of()));
+        var result = new PipelineEngine(services())
+                .run(DefaultSpecs.chat(propertiesFile.toString()),
+                        Map.of(new PinRef("input", AgentKeys.INPUT), "hi",
+                                new PinRef("input", AgentKeys.HISTORY), history));
+
+        var messages = (List<Message>) result.get(new PinRef("out", EdgeKeys.MESSAGES));
+        // history(2) + user + assistant(tool call) + tool result + assistant("done")
+        assertEquals(6, messages.size());
+        assertEquals(new Message.UserMessage("earlier question"), messages.get(0));
+        assertEquals(new Message.AssistantMessage("earlier answer", List.of()), messages.get(1));
+        assertEquals("done", result.get(new PinRef("out", AgentKeys.OUTPUT)));
     }
 }

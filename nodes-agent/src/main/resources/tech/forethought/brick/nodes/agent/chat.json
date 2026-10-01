@@ -1,7 +1,8 @@
 {
   "version": 2,
   "name": "chat",
-  "inputs": [{ "node": "input", "key": "text" }],
+  "inputs": [{ "node": "input", "key": "text" },
+             { "node": "input", "key": "history" }],
   "outputs": [{ "node": "out", "key": "output" }],
   "nodes": [
     { "id": "config", "type": "config-loader", "config": { "path": "config/llm.properties" } },
