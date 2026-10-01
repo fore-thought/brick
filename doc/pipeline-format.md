@@ -6,7 +6,7 @@
 
 ## 1. Status and Rationale
 
-- **The canonical format is JSON.** Rationale: it is isomorphic with the spec record model (`PipelineSpec`/`NodeSpec`/`EdgeSpec`), a near 1:1 mapping; core holds a zero-dependency line and adopts no third-party parser such as a YAML library; the repository has precedent (store-jsonl event persistence, `MessageCodec`).
+- **The canonical format is JSON.** Rationale: it is isomorphic with the spec record model (`PipelineSpec`/`NodeSpec`/`EdgeSpec`/`PinRef`), a near 1:1 mapping; core holds a zero-dependency line and adopts no third-party parser such as a YAML library; the repository has precedent (store-jsonl event persistence, `MessageCodec`).
 - Topology is authored primarily by machines (the blueprint editor), secondarily by hand. Alternative formats (YAML/TOML etc.) may exist as loaders in separate modules without changing the canonical status.
 - Codec: core's `PipelineSpecCodec` (`read`/`write` for JSON text, `fromMap`/`toMap` for the map form).
 
@@ -16,10 +16,11 @@ One document expresses one graph, encoded in UTF-8. Top-level object fields:
 
 | Field | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `version` | integer | yes | — | format version, currently `1` |
+| `version` | integer | yes | — | format version, currently `2` |
 | `name` | string | yes | — | graph name |
-| `entry` | string | yes | — | entry node id |
-| `maxIterations` | integer | no | `50` | cap on node executions per run (loop protection) |
+| `maxFirings` | integer | no | `50` | cap on total node firings per run (loop protection) |
+| `inputs` | array | no | `[]` | pin objects: the run's external injection points |
+| `outputs` | array | no | `[]` | pin objects: where callers read run results |
 | `nodes` | array | yes | — | node objects |
 | `edges` | array | no | `[]` | edge objects |
 
@@ -27,19 +28,25 @@ Node object:
 
 | Field | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `id` | string | yes | — | unique within the graph; edges reference it |
+| `id` | string | yes | — | unique within the graph; edges and inputs/outputs reference it |
 | `type` | string | yes | — | node type, resolved to a `Node` implementation at assembly |
 | `config` | object | no | `{}` | node configuration (see §3) |
+
+Pin object (element of `inputs`/`outputs`):
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `node` | string | yes | — | node id |
+| `key` | string | yes | — | pin name (node-local naming) |
 
 Edge object:
 
 | Field | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `from` | string | yes | — | source node id |
-| `to` | string | yes | — | target node id |
-| `label` | string | no | `null` | route label; absent means the default edge |
+| `from` | pin object | yes | — | source pin (an output pin of some node) |
+| `to` | pin object | yes | — | target pin (an input pin of some node) |
 
-**Omission and defaults**: writers produce the canonical form — fields at their default value are omitted (`maxIterations=50` unwritten, `config={}` unwritten, `label=null` unwritten), and field order is fixed (the table order above). Readers are lenient: an absent or explicitly null field takes its default, and field order is insignificant.
+**Omission and defaults**: writers produce the canonical form — fields at their default value are omitted (`maxFirings=50` unwritten, empty `inputs`/`outputs` unwritten, `config={}` unwritten), and field order is fixed (the table order above). Readers are lenient: an absent or explicitly null field takes its default, and field order is insignificant.
 
 ## 3. Config Value Domain
 
@@ -51,45 +58,52 @@ Numbers normalize to `Long` (integral) / `Double` (floating-point) after a JSON 
 
 ## 4. Versioning
 
-`version` is required, currently `1`. Reading an unknown version fails fast. The format evolves by advancing the version number; there is no automatic migration — migration tooling is deferred until real consumers need it.
+`version` is required, currently `2`. Reading any other version fails fast (`unsupported format version`).
+
+**Changelog**:
+- `v1`: a 0.2.0 development-period draft (execution-line model: `entry` pointer, route-labeled edges, `maxIterations`), never released; retired in place when v2 landed, with no automatic migration.
+- `v2` (current): the dataflow model. Edges are pin-to-pin binding objects (`from`/`to` are pin objects); `entry` is gone, `inputs`/`outputs` declare the run's injection and result pins; `maxIterations` is reborn as `maxFirings`.
+
+The format evolves by advancing the version number; there is no automatic migration — migration tooling is deferred until real consumers need it.
 
 ## 5. Diagnostics Contract
 
 Two layers, continuing the "diagnostics, not gatekeepers" philosophy:
 
 - **Parse time**: format errors (malformed JSON, missing or mistyped fields, unknown version) fail fast, with a JSON-path location in the exception message, e.g. `invalid pipeline format at $.nodes[2]: field 'id' must be a string`. A file that cannot be read means there is no graph; there is nothing to diagnose.
-- **Semantic time**: structurally valid but semantically suspect graphs (dangling references, unreachable nodes, etc.) go through `SpecValidator`, which produces a diagnostic list (severity + location + message); the caller decides what to block on — snapshots and drafts can always be saved.
+- **Semantic time**: structurally valid but semantically suspect graphs go through `SpecValidator`. Structural problems (duplicate node ids, edge and inputs/outputs references to unknown nodes) are errors — the only pre-run gate; pin-level findings (unknown pins, type-family mismatches, multiple edges into one input pin, unsourced reads, unconsumed writes) are all warnings — snapshots and drafts can always be saved, graphs can always run.
 
-## 6. Reserved Expressiveness and Model Notes
+## 6. Model Notes (Dataflow Model)
 
-- **Start and end**: the format has no "start node" / "end node" concepts. The entry is the `entry` pointer; a node with zero out-edges is a terminal, where the run ends naturally. If an editor wants visual anchors, it derives them at the editor layer or a node pack provides conventional types — none of the format's business.
-- **Single edge kind**: there is only one kind of edge — the execution flow (optionally carrying a route label). Data travels on no separate wires: run data is an open container passed station to station (immutable snapshots, key names as the protocol). The keys a node reads and writes are documented conventions of its contract, not typed ports at the format layer.
-- **Fork and join**: one `from` may have many out-edges and one `to` many in-edges — parallel-branch topology is already expressible, so future parallel execution needs no syntax change. Execution semantics (currently label routing plus the default edge) are defined by the engine, decoupled from the document format.
-- **Subgraphs**: a subgraph is an implementation detail of an ordinary node (a node internally executing a nested spec); the format is unaware of it. Its external interface is simply that node's key contract and `config`; since `config` is an open object, a whole document of this very format can be embedded as a subgraph — no multi-graph document needed. Referencing an external graph by name requires a graph library, a non-goal (§8).
+- **An edge is a binding**: it carries one typed named value from a source node's output pin into a target node's input pin (`m = A.getX()`; `B.setU(m)`). Execution order is derived from data dependencies; there is no separate execution line.
+- **A pin is a node's named port**: `NodeContract` reads/writes are real port declarations; pin names are node-local, and wiring translates between them (A's `x` may feed B's `u`).
+- **Triggering (sticky bindings)**: once a value lands on a pin it stays there (later writes overwrite earlier ones); a node fires once all pins its contract declares as reads or context carry a binding, and re-fires when any **read** receives a new value. Context pins are bound-once companions that never trigger by themselves (sticky configuration that persists across loop rounds, conversations carried alongside) — they must be bound, but they are not a reason to fire. A node with no reads and no context (a pure source) fires once at the start.
+- **Selective delivery (conditions = the chosen key)**: gateway nodes (if/switch) return an output map containing only the chosen branch's key; the engine delivers per key along out-edges, so pins of the untaken branch never receive a value and their subgraph never fires. There is no route-label concept.
+- **Repeated delivery (loops = redelivery along a wire)**: a back-edge is an ordinary data wire. One input pin may have many in-edges: every arrival delivers, later writes overwrite, and a new value re-fires downstream. That is the whole loop mechanism; `maxFirings` bounds runaway cycles.
+- **Same value is not re-delivered**: a redelivery equal (`equals`) to the pin's current value does not count as new and does not trigger downstream — idempotent writes cannot spin up loops.
+- **Start and end**: the format has no "start node" / "end node" concepts. Starting points are nodes whose inputs become complete (including run injection); a run terminates silently when no delivery can trigger anything, and the `run-end` event reports the firing count and the nodes that never fired.
+- **Fork and join**: independent branches fire in turn (parallel execution awaits engine support; the semantics already allow it); multiple in-edges are the join.
+- **Subgraphs**: a subgraph is an implementation detail of an ordinary node (a node internally executing a nested spec); the format is unaware of it. Its external endpoints are simply that node's pins on the parent graph; since `config` is an open object, a whole document of this very format can be embedded as a subgraph. Referencing an external graph by name requires a graph library, a non-goal (§8).
 
 ## 7. Examples
 
-Minimal runnable form:
+Minimal runnable form (run injects `in.text`, reads the result from `out.output`):
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "name": "minimal",
-  "entry": "in",
+  "inputs": [{ "node": "in", "key": "text" }],
+  "outputs": [{ "node": "out", "key": "output" }],
   "nodes": [
     { "id": "in", "type": "input" },
     { "id": "out", "type": "output" }
   ],
   "edges": [
-    { "from": "in", "to": "out" }
+    { "from": { "node": "in", "key": "messages" },
+      "to":   { "node": "out", "key": "messages" } }
   ]
 }
-```
-
-An edge with a route label (a gateway node's branch):
-
-```json
-{ "from": "has-tools", "to": "exec", "label": "true" }
 ```
 
 For a complete real-world example, see the default chat chain bundled with nodes-agent: [`nodes-agent/src/main/resources/tech/forethought/brick/nodes/agent/chat.json`](../nodes-agent/src/main/resources/tech/forethought/brick/nodes/agent/chat.json) — the default chain itself ships in this format and is loaded at runtime through `PipelineSpecCodec`.
