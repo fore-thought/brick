@@ -10,7 +10,6 @@ import tech.forethought.brick.core.spec.EdgeSpec;
 import tech.forethought.brick.core.spec.PinRef;
 import tech.forethought.brick.core.spec.PipelineSpec;
 import tech.forethought.brick.core.spi.NodeContract;
-import tech.forethought.brick.core.spi.NodeContract.Key;
 
 /**
  * Pure checks over a spec. Produces diagnostics and never throws; following
@@ -117,9 +116,7 @@ public final class SpecValidator {
             if (contract == null) {
                 continue;
             }
-            var required = new ArrayList<Key>(contract.reads());
-            required.addAll(contract.context());
-            for (var read : required) {
+            for (var read : contract.reads()) {
                 var pin = new PinRef(node.id(), read.name());
                 if (!sourcedPins.contains(pin)) {
                     diagnostics.add(new Diagnostic(Diagnostic.Severity.WARNING,
@@ -149,13 +146,7 @@ public final class SpecValidator {
         if (contract == null) {
             return null;
         }
-        List<Key> declared;
-        if (read) {
-            declared = new ArrayList<>(contract.reads());
-            declared.addAll(contract.context());
-        } else {
-            declared = contract.writes();
-        }
+        var declared = read ? contract.reads() : contract.writes();
         for (var key : declared) {
             if (key.name().equals(pin.key())) {
                 return key.type();

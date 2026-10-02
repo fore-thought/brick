@@ -35,11 +35,10 @@ public final class ConvertOutNode implements Node {
     }
 
     @Override
-    public NodeContract contract() {
-        // tools and llm are bound once and stay sticky across loop refires
+    public NodeContract contract(Map<String, Object> config) {
         return new NodeContract(
-                List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST)),
-                List.of(new Key(AgentKeys.TOOL_DEFINITIONS, ValueType.LIST),
+                List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST),
+                        new Key(AgentKeys.TOOL_DEFINITIONS, ValueType.LIST),
                         new Key(LLM_PIN, ValueType.MAP)),
                 List.of(new Key(AgentKeys.PROTOCOL_REQUEST, ValueType.ANY)), false);
     }

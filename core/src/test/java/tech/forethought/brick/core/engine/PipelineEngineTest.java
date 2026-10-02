@@ -5,14 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
-import tech.forethought.brick.core.event.EventListener;
-import tech.forethought.brick.core.event.TraceEvent;
 import tech.forethought.brick.core.spec.EdgeSpec;
 import tech.forethought.brick.core.spec.NodeSpec;
 import tech.forethought.brick.core.spec.PinRef;
@@ -34,7 +30,7 @@ class PipelineEngineTest {
         }
 
         @Override
-        public NodeContract contract() {
+        public NodeContract contract(Map<String, Object> config) {
             // written key names come from config "key"
             return NodeContract.dynamicKeys();
         }
@@ -55,7 +51,7 @@ class PipelineEngineTest {
         }
 
         @Override
-        public NodeContract contract() {
+        public NodeContract contract(Map<String, Object> config) {
             return new NodeContract(List.of(new Key("in", ValueType.ANY)),
                     List.of(new Key("out", ValueType.ANY)), false);
         }
@@ -76,7 +72,7 @@ class PipelineEngineTest {
         }
 
         @Override
-        public NodeContract contract() {
+        public NodeContract contract(Map<String, Object> config) {
             return new NodeContract(
                     List.of(new Key("control", ValueType.ANY), new Key("value", ValueType.ANY)),
                     List.of(new Key("true", ValueType.ANY), new Key("false", ValueType.ANY)),
@@ -100,7 +96,7 @@ class PipelineEngineTest {
         }
 
         @Override
-        public NodeContract contract() {
+        public NodeContract contract(Map<String, Object> config) {
             return new NodeContract(List.of(new Key("n", ValueType.NUMBER)),
                     List.of(new Key("n", ValueType.NUMBER), new Key("again", ValueType.NUMBER)),
                     false);
@@ -119,50 +115,6 @@ class PipelineEngineTest {
         }
     }
 
-    /** Test node: re-fires on "tick"; "memory" is a bound-once context pin. */
-    static final class ContextNode implements Node {
-        @Override
-        public String type() {
-            return "context";
-        }
-
-        @Override
-        public NodeContract contract() {
-            return new NodeContract(List.of(new Key("tick", ValueType.NUMBER)),
-                    List.of(new Key("memory", ValueType.STRING)),
-                    List.of(new Key("out", ValueType.STRING)), false);
-        }
-
-        @Override
-        public Map<String, Object> execute(Map<String, Object> input, NodeContext context) {
-            var out = new LinkedHashMap<String, Object>();
-            out.put("out", input.get("tick") + (String) input.get("memory"));
-            return out;
-        }
-    }
-
-    /** Test node: writes config key/value once "go" arrives. */
-    static final class GatedPutNode implements Node {
-        @Override
-        public String type() {
-            return "gated-put";
-        }
-
-        @Override
-        public NodeContract contract() {
-            // "go" gates the single firing; it is context, not a trigger
-            return new NodeContract(List.of(),
-                    List.of(new Key("go", ValueType.ANY)), List.of(), true);
-        }
-
-        @Override
-        public Map<String, Object> execute(Map<String, Object> input, NodeContext context) {
-            var out = new LinkedHashMap<String, Object>();
-            out.put(String.valueOf(context.config().get("key")), context.config().get("value"));
-            return out;
-        }
-    }
-
     /** Test node: always fails. */
     static final class FailNode implements Node {
         @Override
@@ -171,7 +123,7 @@ class PipelineEngineTest {
         }
 
         @Override
-        public NodeContract contract() {
+        public NodeContract contract(Map<String, Object> config) {
             return NodeContract.empty();
         }
 
@@ -189,7 +141,7 @@ class PipelineEngineTest {
         }
 
         @Override
-        public NodeContract contract() {
+        public NodeContract contract(Map<String, Object> config) {
             return new NodeContract(List.of(new Key("in", ValueType.ANY)), List.of(), false);
         }
 
@@ -206,8 +158,6 @@ class PipelineEngineTest {
                 .with(Node.class, "forward", new ForwardNode())
                 .with(Node.class, "gate", new GateNode())
                 .with(Node.class, "count", new CountNode())
-                .with(Node.class, "context", new ContextNode())
-                .with(Node.class, "gated-put", new GatedPutNode())
                 .with(Node.class, "fail", new FailNode())
                 .with(Node.class, "mutator", new MutatorNode());
     }
@@ -354,30 +304,6 @@ class PipelineEngineTest {
         var e = assertThrows(PipelineException.class,
                 () -> new PipelineEngine(services()).run(spec, Map.of(new PinRef("evil", "in"), 1)));
         assertTrue(e.getMessage().contains("evil"));
-    }
-
-    @Test
-    void contextPinChangesDoNotRefire() {
-        var events = new ArrayList<TraceEvent>();
-        EventListener recorder = events::add;
-        var spec = new PipelineSpec("ctx",
-                List.of(node("mem", "put", Map.of("key", "memory", "value", "a")),
-                        node("mem2", "gated-put", Map.of("key", "memory", "value", "b")),
-                        node("tick2", "gated-put", Map.of("key", "tick", "value", 2)),
-                        node("c", "context", Map.of())),
-                List.of(edge("mem", "memory", "c", "memory"),
-                        edge("c", "out", "mem2", "go"),
-                        edge("c", "out", "tick2", "go"),
-                        edge("mem2", "memory", "c", "memory"),
-                        edge("tick2", "tick", "c", "tick")),
-                List.of(new PinRef("c", "tick")), List.of());
-        var engine = new PipelineEngine(services(),
-                new EngineConfig(List.of(recorder), false, Set.of()));
-        var result = engine.run(spec, Map.of(new PinRef("c", "tick"), 1));
-        assertEquals("2b", result.get(new PinRef("c", "out")));
-        // mem, c, mem2, tick2, c: the mid-run memory overwrite must not
-        // re-fire c on its own
-        assertEquals(5, events.getLast().payload().get("firings"));
     }
 
     @Test

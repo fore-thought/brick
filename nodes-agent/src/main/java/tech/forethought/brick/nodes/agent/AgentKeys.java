@@ -14,7 +14,7 @@ public final class AgentKeys {
     /** The run input text (input node's read pin): {@code String}. */
     public static final String INPUT = "text";
 
-    /** The conversation so far (input node's context pin): {@code List<Message>}. */
+    /** The conversation so far (input node's read pin): {@code List<Message>}. */
     public static final String HISTORY = "history";
 
     /** Tool definitions assembled for the model: {@code List<ToolDefinition>}. */

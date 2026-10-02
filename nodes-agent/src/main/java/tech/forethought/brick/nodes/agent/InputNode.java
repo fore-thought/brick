@@ -15,10 +15,10 @@ import tech.forethought.brick.core.spi.NodeContract.ValueType;
 
 /**
  * Entry node of the default chain: appends the run input (read pin
- * {@code "text"}) to the injected conversation history (context pin
- * {@code "history"}, default empty) — a fresh conversation of
- * {@code history + [user message]} flows down the graph, so multi-turn
- * sessions stay visible to the model. Thread-safe (stateless).
+ * {@code "text"}) to the injected conversation history (read pin
+ * {@code "history"} — the caller injects it every run, an empty list on the
+ * first turn) and writes the spliced conversation to {@code "messages"}.
+ * Thread-safe (stateless).
  */
 public final class InputNode implements Node {
 
@@ -31,9 +31,10 @@ public final class InputNode implements Node {
     }
 
     @Override
-    public NodeContract contract() {
-        return new NodeContract(List.of(new Key(AgentKeys.INPUT, ValueType.STRING)),
-                List.of(new Key(AgentKeys.HISTORY, ValueType.LIST)),
+    public NodeContract contract(Map<String, Object> config) {
+        return new NodeContract(
+                List.of(new Key(AgentKeys.INPUT, ValueType.STRING),
+                        new Key(AgentKeys.HISTORY, ValueType.LIST)),
                 List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST)), false);
     }
 

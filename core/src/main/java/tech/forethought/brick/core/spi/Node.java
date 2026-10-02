@@ -14,7 +14,7 @@ import java.util.Map;
 public interface Node {
 
     /**
-     * The spec type name this implementation serves (e.g. {@code "if"}).
+     * The spec type name this implementation serves (e.g. {@code "branch"}).
      * Names are protocol: renaming is a breaking change.
      */
     String type();
@@ -22,11 +22,13 @@ public interface Node {
     /**
      * Declares this node's pin interface (see {@link NodeContract}). The
      * engine consumes {@code reads} to derive triggering; editors and
-     * diagnostics consume the rest.
+     * diagnostics consume the rest. Implementations whose pins do not depend
+     * on configuration ignore the parameter.
      *
+     * @param config the node's configuration from the spec
      * @return the contract, never null
      */
-    NodeContract contract();
+    NodeContract contract(Map<String, Object> config);
 
     /**
      * Executes this node.

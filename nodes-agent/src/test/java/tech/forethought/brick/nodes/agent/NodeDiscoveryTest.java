@@ -16,7 +16,8 @@ class NodeDiscoveryTest {
     void discoversAllDefaultChainNodes() {
         var services = Bootstrap.discover();
         for (var type : new String[] {"input", "context-preprocess", "convert-out", "llm-call",
-                "convert-in", "tool-exec", "output", "if", "switch", "config-loader"}) {
+                "convert-in", "tool-exec", "output", "branch", "loop", "pass",
+                "config-loader"}) {
             assertEquals(type, services.require(Node.class, type).type());
         }
     }

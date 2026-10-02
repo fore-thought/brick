@@ -18,7 +18,7 @@ public final class PlugNode implements Node {
     }
 
     @Override
-    public NodeContract contract() {
+    public NodeContract contract(Map<String, Object> config) {
         return NodeContract.empty();
     }
 

@@ -27,12 +27,11 @@ import tech.forethought.brick.core.spi.Services;
 /**
  * The dataflow engine — a pure caller. Edges are bindings: a value a node
  * writes to an output pin is delivered, sticky, to every wired input pin.
- * A node fires once all pins its contract declares as reads or context
- * carry a binding, and re-fires when any of its reads receives a new value —
- * context pins are bound-once companions that never trigger by themselves.
- * Nodes with no reads and no context fire once at the start. A run ends
- * silently when no node can fire; the firing cap bounds runaway loops. It
- * understands no business logic.
+ * A node fires once all pins its contract declares as reads carry a
+ * binding, and re-fires when any of them receives a new value; nodes with
+ * no reads fire once at the start. A run ends silently when no node can
+ * fire; the firing cap bounds runaway loops. It understands no business
+ * logic.
  *
  * <p>Every fact of the run is emitted onto an append-only event stream:
  * observation, persistence, and live display are all listeners. Emission is
@@ -116,8 +115,7 @@ public final class PipelineEngine {
                             "loop protection: exceeded maxFirings=" + spec.maxFirings());
                 }
                 var nodeSpec = assembly.nodesById().get(id);
-                var trigger = triggerInput(id, assembly.readsByNode().get(id),
-                        assembly.contextByNode().get(id), bindings);
+                var trigger = triggerInput(id, assembly.readsByNode().get(id), bindings);
                 emit(EventKinds.NODE_ENTER, runId, sessionId, id, payloadOf(trigger));
                 var emitter = new NodeEmitter(runId, sessionId, id);
                 var context = new NodeContext(runId, nodeSpec.id(), nodeSpec.config(), services,
@@ -175,7 +173,6 @@ public final class PipelineEngine {
         var nodesById = new LinkedHashMap<String, NodeSpec>();
         var nodeImpls = new HashMap<String, Node>();
         var readsByNode = new HashMap<String, List<String>>();
-        var contextByNode = new HashMap<String, List<String>>();
         var outEdges = new HashMap<PinRef, List<EdgeSpec>>();
         for (var edge : spec.edges()) {
             outEdges.computeIfAbsent(edge.from(), k -> new ArrayList<>()).add(edge);
@@ -185,17 +182,15 @@ public final class PipelineEngine {
                 nodesById.put(nodeSpec.id(), nodeSpec);
                 var node = services.require(Node.class, nodeSpec.type());
                 nodeImpls.put(nodeSpec.id(), node);
-                var contract = node.contract();
                 readsByNode.put(nodeSpec.id(),
-                        contract.reads().stream().map(NodeContract.Key::name).toList());
-                contextByNode.put(nodeSpec.id(),
-                        contract.context().stream().map(NodeContract.Key::name).toList());
+                        node.contract(nodeSpec.config()).reads().stream()
+                                .map(NodeContract.Key::name).toList());
             }
         } catch (Exception e) {
             throw new PipelineException(
                     "cannot assemble graph '" + spec.name() + "': " + e.getMessage(), e);
         }
-        return new Assembly(nodesById, nodeImpls, readsByNode, contextByNode, outEdges);
+        return new Assembly(nodesById, nodeImpls, readsByNode, outEdges);
     }
 
     /**
@@ -223,8 +218,8 @@ public final class PipelineEngine {
                                      ArrayDeque<String> queue, Set<String> queued) {
         for (var node : spec.nodes()) {
             var id = node.id();
-            if (!queued.contains(id) && isReady(id, assembly.readsByNode().get(id),
-                    assembly.contextByNode().get(id), pinVersion, firedVersion, fired)) {
+            if (!queued.contains(id) && isReady(id, assembly.readsByNode().get(id), pinVersion,
+                    firedVersion, fired)) {
                 queue.add(id);
                 queued.add(id);
             }
@@ -232,33 +227,18 @@ public final class PipelineEngine {
     }
 
     /**
-     * Ready when every read and context pin carries a binding and the newest
-     * binding among the triggering reads is newer than the last firing.
-     * Context pins never trigger: they are bound-once companions (sticky
-     * configuration, loop-carried conversations), already fresh whenever a
-     * read fires.
+     * Ready when every read carries a binding and the newest binding among
+     * them is newer than the last firing; the strict rule the outer graph and
+     * every loop body share.
      */
-    private static boolean isReady(String id, List<String> reads, List<String> context,
+    private static boolean isReady(String id, List<String> reads,
                                    Map<PinRef, Integer> pinVersion,
                                    Map<String, Integer> firedVersion, Set<String> fired) {
         if (reads.isEmpty()) {
-            return !fired.contains(id) && allBound(id, context, pinVersion);
-        }
-        if (!allBound(id, context, pinVersion)) {
-            return false;
+            return !fired.contains(id);
         }
         var newest = readVersion(id, reads, pinVersion);
         return newest > 0 && newest > firedVersion.getOrDefault(id, 0);
-    }
-
-    private static boolean allBound(String id, List<String> keys,
-                                    Map<PinRef, Integer> pinVersion) {
-        for (var key : keys) {
-            if (pinVersion.getOrDefault(new PinRef(id, key), 0) == 0) {
-                return false;
-            }
-        }
-        return true;
     }
 
     /** The newest binding version across a node's read pins; 0 if any is unbound. */
@@ -276,13 +256,9 @@ public final class PipelineEngine {
     }
 
     private static Map<String, Object> triggerInput(String id, List<String> reads,
-                                                    List<String> context,
                                                     Map<PinRef, Object> bindings) {
         var snapshot = new LinkedHashMap<String, Object>();
         for (var key : reads) {
-            snapshot.put(key, bindings.get(new PinRef(id, key)));
-        }
-        for (var key : context) {
             snapshot.put(key, bindings.get(new PinRef(id, key)));
         }
         return Map.copyOf(snapshot);
@@ -290,7 +266,6 @@ public final class PipelineEngine {
 
     private record Assembly(Map<String, NodeSpec> nodesById, Map<String, Node> nodeImpls,
                             Map<String, List<String>> readsByNode,
-                            Map<String, List<String>> contextByNode,
                             Map<PinRef, List<EdgeSpec>> outEdges) {
     }
 

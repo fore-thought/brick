@@ -31,7 +31,7 @@ public final class ContextPreprocessNode implements Node {
     }
 
     @Override
-    public NodeContract contract() {
+    public NodeContract contract(Map<String, Object> config) {
         return new NodeContract(List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST)),
                 List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST),
                         new Key(AgentKeys.TOOL_DEFINITIONS, ValueType.LIST)), false);

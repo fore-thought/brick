@@ -1,3 +1,4 @@
-tech.forethought.brick.nodes.basic.IfNode
-tech.forethought.brick.nodes.basic.SwitchNode
+tech.forethought.brick.nodes.basic.BranchNode
+tech.forethought.brick.nodes.basic.LoopNode
+tech.forethought.brick.nodes.basic.PassNode
 tech.forethought.brick.nodes.basic.ConfigLoaderNode

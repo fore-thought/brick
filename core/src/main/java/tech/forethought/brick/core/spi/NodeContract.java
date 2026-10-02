@@ -4,37 +4,27 @@ import java.util.List;
 
 /**
  * A node's declared pin interface: which pins it reads, which pins it
- * consumes as bound-once context, which pins it writes, and the value type
- * family of each. The engine consumes the declaration to derive triggering:
- * all reads and context pins must carry a binding before the node fires, and
- * a new value on any <em>read</em> re-fires it — context pins are sticky
- * companions that never trigger by themselves (loop-carried conversations,
- * configuration injected once). Editors use the declaration for drawing and
- * diagnostics; a declaration that mismatches runtime reality is not an
- * error.
+ * writes, and the value type family of each. The engine consumes the
+ * declaration to derive triggering: all reads must carry a binding before
+ * the node fires, and a new value on any read re-fires it. Editors use the
+ * declaration for drawing and diagnostics; a declaration that mismatches
+ * runtime reality is not an error.
  *
  * <p>Pin names are node-local. When {@code dynamic} is true the pin set
  * cannot be statically enumerated (e.g. the names come from node
- * configuration or an external file); {@code reads}, {@code context} and
- * {@code writes} may still carry the known fixed part so tools can mark the
- * rest as dynamic. Immutable.
+ * configuration); {@code reads} and {@code writes} may still carry the
+ * known fixed part so tools can mark the rest as dynamic. Immutable.
  *
- * @param reads   triggering pins: bound required, a new value re-fires
- * @param context non-triggering pins: bound required, never re-fire
+ * @param reads   pins the node consumes: all must be bound to fire, a new
+ *                value on any of them re-fires
  * @param writes  pins the node produces
  * @param dynamic true if the pin set is known only at run time
  */
-public record NodeContract(List<Key> reads, List<Key> context, List<Key> writes,
-                           boolean dynamic) {
+public record NodeContract(List<Key> reads, List<Key> writes, boolean dynamic) {
 
     public NodeContract {
         reads = List.copyOf(reads);
-        context = List.copyOf(context);
         writes = List.copyOf(writes);
-    }
-
-    public NodeContract(List<Key> reads, List<Key> writes, boolean dynamic) {
-        this(reads, List.of(), writes, dynamic);
     }
 
     /**
@@ -73,7 +63,7 @@ public record NodeContract(List<Key> reads, List<Key> context, List<Key> writes,
 
     /** No reads, no writes (e.g. a source node producing nothing). */
     public static NodeContract empty() {
-        return new NodeContract(List.of(), List.of(), List.of(), false);
+        return new NodeContract(List.of(), List.of(), false);
     }
 
     /**
@@ -81,6 +71,6 @@ public record NodeContract(List<Key> reads, List<Key> context, List<Key> writes,
      * whose names come from configuration).
      */
     public static NodeContract dynamicKeys() {
-        return new NodeContract(List.of(), List.of(), List.of(), true);
+        return new NodeContract(List.of(), List.of(), true);
     }
 }

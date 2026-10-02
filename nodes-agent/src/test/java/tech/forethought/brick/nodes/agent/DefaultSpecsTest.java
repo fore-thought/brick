@@ -24,12 +24,15 @@ import tech.forethought.brick.core.spi.Node;
 import tech.forethought.brick.core.spi.ProtocolAdapter;
 import tech.forethought.brick.core.spi.Tool;
 import tech.forethought.brick.core.testkit.ManualServices;
+import tech.forethought.brick.nodes.basic.BranchNode;
 import tech.forethought.brick.nodes.basic.ConfigLoaderNode;
-import tech.forethought.brick.nodes.basic.IfNode;
+import tech.forethought.brick.nodes.basic.LoopNode;
+import tech.forethought.brick.nodes.basic.PassNode;
 
 /**
- * The default chat graph end-to-end: config loading, agent loop with a tool
- * call and a back-edge, and the output terminal — all against test doubles.
+ * The default chat graph end-to-end: config loading, the agent loop inside
+ * the loop container (one tool-call round against the mock adapter), and the
+ * output terminal — all against test doubles.
  */
 class DefaultSpecsTest {
 
@@ -39,7 +42,9 @@ class DefaultSpecsTest {
     private static ManualServices services() {
         return new ManualServices()
                 .with(Node.class, ConfigLoaderNode.TYPE, new ConfigLoaderNode())
-                .with(Node.class, IfNode.TYPE, new IfNode())
+                .with(Node.class, BranchNode.TYPE, new BranchNode())
+                .with(Node.class, LoopNode.TYPE, new LoopNode())
+                .with(Node.class, PassNode.TYPE, new PassNode())
                 .with(Node.class, InputNode.TYPE, new InputNode())
                 .with(Node.class, ContextPreprocessNode.TYPE, new ContextPreprocessNode())
                 .with(Node.class, ConvertOutNode.TYPE, new ConvertOutNode())
@@ -91,7 +96,7 @@ class DefaultSpecsTest {
                                 new PinRef("input", AgentKeys.HISTORY), List.of()));
 
         assertEquals("done", result.get(new PinRef("out", AgentKeys.OUTPUT)));
-        assertEquals(false, result.get(new PinRef("convert-back", AgentKeys.HAS_TOOL_CALLS)));
+        assertEquals(false, result.get(new PinRef("agent-loop", AgentKeys.HAS_TOOL_CALLS)));
         var messages = (List<Message>) result.get(new PinRef("out", EdgeKeys.MESSAGES));
         assertEquals(4, messages.size());
         assertInstanceOf(Message.UserMessage.class, messages.get(0));
@@ -99,7 +104,7 @@ class DefaultSpecsTest {
         assertInstanceOf(Message.ToolResultMessage.class, messages.get(2));
         var last = assertInstanceOf(Message.AssistantMessage.class, messages.get(3));
         assertEquals("done", last.content());
-        assertFalse(result.containsKey(new PinRef("out", "true")));
+        assertFalse(result.containsKey(new PinRef("agent-loop", "true")));
     }
 
     @Test

@@ -32,13 +32,10 @@ public final class ConvertInNode implements Node {
     }
 
     @Override
-    public NodeContract contract() {
-        // the conversation is context: it changes every loop round, but the
-        // fold must re-fire only when new responses arrive — by then the
-        // conversation pin already carries the current round's messages
+    public NodeContract contract(Map<String, Object> config) {
         return new NodeContract(
-                List.of(new Key(AgentKeys.PROTOCOL_RESPONSES, ValueType.LIST)),
-                List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST)),
+                List.of(new Key(AgentKeys.PROTOCOL_RESPONSES, ValueType.LIST),
+                        new Key(EdgeKeys.MESSAGES, ValueType.LIST)),
                 List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST),
                         new Key(AgentKeys.HAS_TOOL_CALLS, ValueType.BOOLEAN)), false);
     }

@@ -17,7 +17,7 @@ public final class RogueEchoNode implements Node {
     }
 
     @Override
-    public NodeContract contract() {
+    public NodeContract contract(Map<String, Object> config) {
         return NodeContract.empty();
     }
 

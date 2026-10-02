@@ -57,7 +57,7 @@ public abstract class NodeContractTest {
         // this suite pins runtime behavior contracts of Node; the returned
         // declaration record (spi.NodeContract) is annotation-only, so the
         // suite asserts its presence and leaves its content unvalidated
-        assertNotNull(subject().contract());
+        assertNotNull(subject().contract(sampleConfig()));
     }
 
     @Test

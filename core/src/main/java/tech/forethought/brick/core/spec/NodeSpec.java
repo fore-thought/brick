@@ -7,8 +7,8 @@ import java.util.Map;
  * implementation, and its configuration. Immutable.
  *
  * @param id     unique within one spec; how edges reference this node
- * @param type   the node type (e.g. {@code "if"}), resolved to a {@code Node}
- *               implementation at assembly
+ * @param type   the node type (e.g. {@code "branch"}), resolved to a
+ *               {@code Node} implementation at assembly
  * @param config node-specific configuration
  */
 public record NodeSpec(String id, String type, Map<String, Object> config) {

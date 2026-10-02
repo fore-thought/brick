@@ -40,7 +40,7 @@ class PipelineEngineEventsTest {
         }
 
         @Override
-        public NodeContract contract() {
+        public NodeContract contract(Map<String, Object> config) {
             return new NodeContract(
                     List.of(new Key("seed", ValueType.ANY)),
                     List.of(new Key("x", ValueType.NUMBER)), false);
