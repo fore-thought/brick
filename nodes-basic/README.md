@@ -3,7 +3,7 @@
 > First-party default node pack: basic nodes (gateways and producers).
 
 - Coordinates: `tech.forethought.brick:nodes-basic:0.2.0-SNAPSHOT`
-- Contents: `if` (selective-delivery gateway: reads `control` + `value`, delivers `value` under the `true` or `false` pin only), `switch` (selective-delivery gateway: reads `value`, delivers it under the matching config `cases` pin or `default`), and `config-loader` (loads a `.properties` file into one MAP pin; config `path`, `as`).
+- Contents: control structures — `branch` (selective-delivery gateway: reads `control` + `value`, delivers `value` under the matching config `cases` pin or `default`; a BOOLEAN control without config degrades to the `true`/`false` two-pin form), `loop` (loop container: config embeds a complete body document — while-first semantics, carried values are the body inputs ∩ outputs by same key, output declarations may rename exposure with `as`; config `condition`, `maxIterations`), and `pass` (forwards `value` as-is — the join node for multi-source pins); plus `config-loader` (loads a `.properties` file into one MAP pin; config `path`, `as`).
 - Nodes are declared via `META-INF/services` and discovered through `ServiceLoader`; no UI frameworks, no third-party runtime dependencies.
 
 中文版本见 [README.zh.md](README.zh.md)。
