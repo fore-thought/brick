@@ -28,7 +28,7 @@ public final class PassNode implements Node {
     @Override
     public NodeContract contract(Map<String, Object> config) {
         return new NodeContract(List.of(new Key("value", ValueType.ANY)),
-                List.of(new Key("value", ValueType.ANY)), false);
+                List.of(new Key("value", ValueType.ANY)));
     }
 
     @Override

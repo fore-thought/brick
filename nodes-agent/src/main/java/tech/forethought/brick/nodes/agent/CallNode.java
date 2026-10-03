@@ -30,7 +30,7 @@ public final class CallNode implements Node {
     @Override
     public NodeContract contract(Map<String, Object> config) {
         return new NodeContract(List.of(new Key(AgentKeys.PROTOCOL_REQUEST, ValueType.ANY)),
-                List.of(new Key(AgentKeys.PROTOCOL_RESPONSES, ValueType.LIST)), false);
+                List.of(new Key(AgentKeys.PROTOCOL_RESPONSES, ValueType.LIST)));
     }
 
     @Override

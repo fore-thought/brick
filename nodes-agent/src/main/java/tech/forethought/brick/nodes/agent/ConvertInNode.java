@@ -37,7 +37,7 @@ public final class ConvertInNode implements Node {
                 List.of(new Key(AgentKeys.PROTOCOL_RESPONSES, ValueType.LIST),
                         new Key(EdgeKeys.MESSAGES, ValueType.LIST)),
                 List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST),
-                        new Key(AgentKeys.HAS_TOOL_CALLS, ValueType.BOOLEAN)), false);
+                        new Key(AgentKeys.HAS_TOOL_CALLS, ValueType.BOOLEAN)));
     }
 
     @Override

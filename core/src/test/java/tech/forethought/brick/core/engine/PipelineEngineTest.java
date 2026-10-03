@@ -31,8 +31,11 @@ class PipelineEngineTest {
 
         @Override
         public NodeContract contract(Map<String, Object> config) {
-            // written key names come from config "key"
-            return NodeContract.dynamicKeys();
+            // the written key's name comes from config "key"
+            var key = config.get("key");
+            return key == null ? NodeContract.empty()
+                    : new NodeContract(List.of(),
+                            List.of(new Key(String.valueOf(key), ValueType.ANY)));
         }
 
         @Override
@@ -53,7 +56,7 @@ class PipelineEngineTest {
         @Override
         public NodeContract contract(Map<String, Object> config) {
             return new NodeContract(List.of(new Key("in", ValueType.ANY)),
-                    List.of(new Key("out", ValueType.ANY)), false);
+                    List.of(new Key("out", ValueType.ANY)));
         }
 
         @Override
@@ -75,8 +78,7 @@ class PipelineEngineTest {
         public NodeContract contract(Map<String, Object> config) {
             return new NodeContract(
                     List.of(new Key("control", ValueType.ANY), new Key("value", ValueType.ANY)),
-                    List.of(new Key("true", ValueType.ANY), new Key("false", ValueType.ANY)),
-                    false);
+                    List.of(new Key("true", ValueType.ANY), new Key("false", ValueType.ANY)));
         }
 
         @Override
@@ -98,8 +100,7 @@ class PipelineEngineTest {
         @Override
         public NodeContract contract(Map<String, Object> config) {
             return new NodeContract(List.of(new Key("n", ValueType.NUMBER)),
-                    List.of(new Key("n", ValueType.NUMBER), new Key("again", ValueType.NUMBER)),
-                    false);
+                    List.of(new Key("n", ValueType.NUMBER), new Key("again", ValueType.NUMBER)));
         }
 
         @Override
@@ -142,7 +143,7 @@ class PipelineEngineTest {
 
         @Override
         public NodeContract contract(Map<String, Object> config) {
-            return new NodeContract(List.of(new Key("in", ValueType.ANY)), List.of(), false);
+            return new NodeContract(List.of(new Key("in", ValueType.ANY)), List.of());
         }
 
         @Override

@@ -32,8 +32,8 @@ public final class ConfigLoaderNode implements Node {
 
     @Override
     public NodeContract contract(Map<String, Object> config) {
-        // the pin name comes from config "as", known only at run time
-        return new NodeContract(List.of(), List.of(new Key("llm", ValueType.MAP)), true);
+        var pin = String.valueOf(config.getOrDefault("as", "llm"));
+        return new NodeContract(List.of(), List.of(new Key(pin, ValueType.MAP)));
     }
 
     @Override

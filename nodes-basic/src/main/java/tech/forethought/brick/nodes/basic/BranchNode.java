@@ -1,5 +1,6 @@
 package tech.forethought.brick.nodes.basic;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,12 +16,11 @@ import tech.forethought.brick.core.spi.NodeContract.ValueType;
  * {@code value}; config {@code cases} (list of strings, optional) enumerates
  * the case pins. The output map carries {@code value} under the case whose
  * name equals the string form of {@code control}, or under {@code "default"}
- * when nothing matches — only the selected key is delivered, so the untaken
- * branch's subgraph never fires. Without config, a BOOLEAN control degrades
- * to the two-pin form (cases {@code ["true", "false"]}); any other control
- * without config is an error. The case pins exist only at run time, so the
- * contract is dynamic plus the fixed {@code default} pin. Thread-safe
- * (stateless).
+ * When nothing matches, {@code value} is delivered under {@code "default"}.
+ * Without config, a BOOLEAN control degrades to the two-pin form (cases
+ * {@code ["true", "false"]}); any other control without config is an error.
+ * All pins are enumerated from the configuration — none are implicit.
+ * Thread-safe (stateless).
  */
 public final class BranchNode implements Node {
 
@@ -34,10 +34,21 @@ public final class BranchNode implements Node {
 
     @Override
     public NodeContract contract(Map<String, Object> config) {
-        // case pin names come from config "cases", known only at run time
+        var cases = config.get("cases");
+        var writes = new ArrayList<Key>();
+        if (cases instanceof List<?> list) {
+            for (var name : list) {
+                writes.add(new Key(String.valueOf(name), ValueType.ANY));
+            }
+        } else {
+            // no config: the BOOLEAN-control degradation pins
+            writes.add(new Key("true", ValueType.ANY));
+            writes.add(new Key("false", ValueType.ANY));
+        }
+        writes.add(new Key("default", ValueType.ANY));
         return new NodeContract(
                 List.of(new Key("control", ValueType.ANY), new Key("value", ValueType.ANY)),
-                List.of(new Key("default", ValueType.ANY)), true);
+                writes);
     }
 
     @Override

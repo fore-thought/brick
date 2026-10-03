@@ -53,7 +53,7 @@ class AgentLoopTest {
         @Override
         public NodeContract contract(Map<String, Object> config) {
             return new NodeContract(List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST)),
-                    List.of(new Key("request", ValueType.ANY)), false);
+                    List.of(new Key("request", ValueType.ANY)));
         }
 
         @Override
@@ -77,7 +77,7 @@ class AgentLoopTest {
         @Override
         public NodeContract contract(Map<String, Object> config) {
             return new NodeContract(List.of(new Key("request", ValueType.ANY)),
-                    List.of(new Key("responses", ValueType.LIST)), false);
+                    List.of(new Key("responses", ValueType.LIST)));
         }
 
         @Override
@@ -103,7 +103,7 @@ class AgentLoopTest {
                     List.of(new Key("responses", ValueType.LIST),
                             new Key(EdgeKeys.MESSAGES, ValueType.LIST)),
                     List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST),
-                            new Key("more", ValueType.BOOLEAN)), false);
+                            new Key("more", ValueType.BOOLEAN)));
         }
 
         @Override
@@ -132,7 +132,7 @@ class AgentLoopTest {
         @Override
         public NodeContract contract(Map<String, Object> config) {
             return new NodeContract(List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST)),
-                    List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST)), false);
+                    List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST)));
         }
 
         @Override
@@ -238,7 +238,7 @@ class AgentLoopTest {
         @Override
         public NodeContract contract(Map<String, Object> config) {
             return new NodeContract(List.of(new Key("text", ValueType.STRING)),
-                    List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST)), false);
+                    List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST)));
         }
 
         @Override
@@ -258,7 +258,7 @@ class AgentLoopTest {
         @Override
         public NodeContract contract(Map<String, Object> config) {
             return new NodeContract(List.of(new Key("value", ValueType.ANY)),
-                    List.of(new Key(EdgeKeys.MESSAGES, ValueType.ANY)), false);
+                    List.of(new Key(EdgeKeys.MESSAGES, ValueType.ANY)));
         }
 
         @Override

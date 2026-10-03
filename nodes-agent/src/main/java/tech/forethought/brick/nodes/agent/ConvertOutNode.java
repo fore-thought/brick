@@ -40,7 +40,7 @@ public final class ConvertOutNode implements Node {
                 List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST),
                         new Key(AgentKeys.TOOL_DEFINITIONS, ValueType.LIST),
                         new Key(LLM_PIN, ValueType.MAP)),
-                List.of(new Key(AgentKeys.PROTOCOL_REQUEST, ValueType.ANY)), false);
+                List.of(new Key(AgentKeys.PROTOCOL_REQUEST, ValueType.ANY)));
     }
 
     @Override

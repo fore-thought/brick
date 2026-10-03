@@ -17,7 +17,7 @@ import tech.forethought.brick.core.spi.NodeContract.ValueType;
 class SpecValidatorTest {
 
     private static final NodeContract FORWARD = new NodeContract(
-            List.of(new Key("in", ValueType.ANY)), List.of(new Key("out", ValueType.ANY)), false);
+            List.of(new Key("in", ValueType.ANY)), List.of(new Key("out", ValueType.ANY)));
 
     private static NodeSpec node(String id) {
         return new NodeSpec(id, "any", Map.of());
@@ -90,11 +90,11 @@ class SpecValidatorTest {
     @Test
     void typeMismatchIsAWarningAndAnyAbsorbs() {
         var strings = new NodeContract(List.of(new Key("in", ValueType.STRING)),
-                List.of(new Key("out", ValueType.STRING)), false);
+                List.of(new Key("out", ValueType.STRING)));
         var numbers = new NodeContract(List.of(new Key("in", ValueType.NUMBER)),
-                List.of(new Key("out", ValueType.NUMBER)), false);
+                List.of(new Key("out", ValueType.NUMBER)));
         var anys = new NodeContract(List.of(new Key("in", ValueType.ANY)),
-                List.of(new Key("out", ValueType.ANY)), false);
+                List.of(new Key("out", ValueType.ANY)));
         var mismatch = new PipelineSpec("mismatch",
                 List.of(node("n"), node("s")),
                 List.of(edge("n", "out", "s", "in")),
@@ -159,17 +159,5 @@ class SpecValidatorTest {
                 List.of(), List.of(new PinRef("a", "out")));
         var diagnostics = SpecValidator.validate(spec, Map.of("a", FORWARD));
         assertTrue(diagnostics.stream().noneMatch(d -> d.message().contains("no consumer")));
-    }
-
-    @Test
-    void dynamicContractSkipsUnknownPinChecks() {
-        var spec = new PipelineSpec("dynamic",
-                List.of(node("a"), node("b")),
-                List.of(edge("a", "anything", "b", "in")),
-                List.of(), List.of());
-        var dynamic = NodeContract.dynamicKeys();
-        var diagnostics = SpecValidator.validate(spec, Map.of("a", dynamic, "b", FORWARD));
-        assertTrue(diagnostics.stream()
-                .noneMatch(d -> d.message().contains("not a declared output")));
     }
 }

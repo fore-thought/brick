@@ -27,7 +27,7 @@ public final class OutputNode implements Node {
     @Override
     public NodeContract contract(Map<String, Object> config) {
         return new NodeContract(List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST)),
-                List.of(new Key(AgentKeys.OUTPUT, ValueType.STRING)), false);
+                List.of(new Key(AgentKeys.OUTPUT, ValueType.STRING)));
     }
 
     @Override

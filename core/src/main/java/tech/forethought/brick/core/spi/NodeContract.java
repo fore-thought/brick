@@ -4,23 +4,23 @@ import java.util.List;
 
 /**
  * A node's declared pin interface: which pins it reads, which pins it
- * writes, and the value type family of each. The engine consumes the
- * declaration to derive triggering: all reads must carry a binding before
- * the node fires, and a new value on any read re-fires it. Editors use the
- * declaration for drawing and diagnostics; a declaration that mismatches
- * runtime reality is not an error.
+ * writes, and the value type family of each. The declaration is always
+ * explicit — the graph is a static structure in its maintainer's head, and
+ * no run-time variable influences pin shapes. Implementations whose pin
+ * names come from configuration enumerate them from {@link Node#contract
+ * (Map)}'s config argument. The engine consumes {@code reads} to derive
+ * triggering: all reads must carry a binding before the node fires, and a
+ * new value on any read re-fires it. Editors use the declaration for
+ * drawing and diagnostics; a declaration that mismatches runtime reality
+ * is not an error.
  *
- * <p>Pin names are node-local. When {@code dynamic} is true the pin set
- * cannot be statically enumerated (e.g. the names come from node
- * configuration); {@code reads} and {@code writes} may still carry the
- * known fixed part so tools can mark the rest as dynamic. Immutable.
+ * <p>Pin names are node-local. Immutable.
  *
- * @param reads   pins the node consumes: all must be bound to fire, a new
- *                value on any of them re-fires
- * @param writes  pins the node produces
- * @param dynamic true if the pin set is known only at run time
+ * @param reads  pins the node consumes: all must be bound to fire, a new
+ *               value on any of them re-fires
+ * @param writes pins the node produces
  */
-public record NodeContract(List<Key> reads, List<Key> writes, boolean dynamic) {
+public record NodeContract(List<Key> reads, List<Key> writes) {
 
     public NodeContract {
         reads = List.copyOf(reads);
@@ -63,14 +63,6 @@ public record NodeContract(List<Key> reads, List<Key> writes, boolean dynamic) {
 
     /** No reads, no writes (e.g. a source node producing nothing). */
     public static NodeContract empty() {
-        return new NodeContract(List.of(), List.of(), false);
-    }
-
-    /**
-     * Reads and writes known only at run time (e.g. a node producing pins
-     * whose names come from configuration).
-     */
-    public static NodeContract dynamicKeys() {
-        return new NodeContract(List.of(), List.of(), true);
+        return new NodeContract(List.of(), List.of());
     }
 }

@@ -37,8 +37,7 @@ public final class LoopNodeTest extends NodeContractTest {
             return new NodeContract(
                     List.of(new NodeContract.Key("n", NodeContract.ValueType.NUMBER)),
                     List.of(new NodeContract.Key("n", NodeContract.ValueType.NUMBER),
-                            new NodeContract.Key("more", NodeContract.ValueType.BOOLEAN)),
-                    false);
+                            new NodeContract.Key("more", NodeContract.ValueType.BOOLEAN)));
         }
 
         @Override
@@ -150,7 +149,6 @@ public final class LoopNodeTest extends NodeContractTest {
         var writes = contract.writes().stream().map(NodeContract.Key::name).toList();
         assertTrue(writes.contains("n"));
         assertTrue(writes.contains("more"));
-        assertTrue(contract.dynamic());
     }
 
     @Test
@@ -186,18 +184,44 @@ public final class LoopNodeTest extends NodeContractTest {
     }
 
     @Test
-    void unproducedConditionPinFailsClearly() {
-        var config = loopConfig(3, true, 10);
+    void unproducedTrueConditionWarnsAndRunsUntilCap() {
+        var emitter = new RecordingEmitter();
+        var config = loopConfig(1_000, true, 5);
         var condition = new LinkedHashMap<String, Object>();
         condition.put("pin", "nope");
         condition.put("initial", true);
         config.put("condition", condition);
-        var context = new NodeContext("run", "n", config, services(),
-                EventEmitter.noop());
-        var e = assertThrows(IllegalArgumentException.class,
+        var context = new NodeContext("run", "n", config, services(), emitter);
+        var e = assertThrows(PipelineException.class,
                 () -> subject().execute(Map.of("n", 0), context));
-        assertEquals("loop node: condition pin 'nope' is not produced by any body output",
-                e.getMessage());
+        assertTrue(e.getMessage().contains("loop protection"));
+        var warnings = emitter.events().stream()
+                .filter(event -> EventKinds.WARNING.equals(event.kind())).toList();
+        assertEquals(1, warnings.size());
+        var message = String.valueOf(warnings.getFirst().payload().get("message"));
+        assertTrue(message.contains("'nope'"));
+        assertTrue(message.contains("maxIterations"));
+    }
+
+    @Test
+    void unproducedFalseConditionWarnsAndSkipsTheBody() {
+        var emitter = new RecordingEmitter();
+        var config = loopConfig(3, false, 10);
+        var condition = new LinkedHashMap<String, Object>();
+        condition.put("pin", "nope");
+        condition.put("initial", false);
+        config.put("condition", condition);
+        var context = new NodeContext("run", "n", config, services(), emitter);
+        var result = subject().execute(Map.of("n", 7), context);
+        assertEquals(Map.of("n", 7), result);
+        var warnings = emitter.events().stream()
+                .filter(event -> EventKinds.WARNING.equals(event.kind())).toList();
+        assertEquals(1, warnings.size());
+        assertTrue(String.valueOf(warnings.getFirst().payload().get("message"))
+                .contains("never runs"));
+        // no nested run at all
+        assertTrue(emitter.events().stream()
+                .noneMatch(event -> EventKinds.RUN_START.equals(event.kind())));
     }
 
     @Test

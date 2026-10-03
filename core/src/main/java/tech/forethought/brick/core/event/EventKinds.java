@@ -29,4 +29,11 @@ public final class EventKinds {
 
     /** Incremental response text for live display. Transient: never persisted. */
     public static final String TOKEN_DELTA = "token-delta";
+
+    /**
+     * A run-diagnostic warning: suspicious but non-fatal, the run continues
+     * (diagnostics, not gatekeepers). Payload carries a {@code message}.
+     * Durable.
+     */
+    public static final String WARNING = "warning";
 }

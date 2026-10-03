@@ -35,7 +35,7 @@ public final class InputNode implements Node {
         return new NodeContract(
                 List.of(new Key(AgentKeys.INPUT, ValueType.STRING),
                         new Key(AgentKeys.HISTORY, ValueType.LIST)),
-                List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST)), false);
+                List.of(new Key(EdgeKeys.MESSAGES, ValueType.LIST)));
     }
 
     @Override

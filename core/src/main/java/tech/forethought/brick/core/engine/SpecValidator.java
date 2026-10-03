@@ -70,8 +70,7 @@ public final class SpecValidator {
      * drafts stay saveable and graphs stay runnable:
      *
      * <ul>
-     *   <li>unknown pins on either end of an edge (skipped for dynamic
-     *       contracts, whose pin set is known only at run time);</li>
+     *   <li>unknown pins on either end of an edge;</li>
      *   <li>type-family mismatches along an edge (ANY absorbs everything);</li>
      *   <li>multiple edges into one input pin (legal loop-back mechanism,
      *       also a typo magnet);</li>
@@ -136,10 +135,8 @@ public final class SpecValidator {
     }
 
     /**
-     * The declared type family of a pin, or null if it cannot be determined
-     * (no contract, or a dynamic contract that does not declare the pin —
-     * never a finding). A declared-but-missing pin on a static contract is a
-     * warning and also yields null.
+     * The declared type family of a pin, or null if the contract does not
+     * declare it (a warning for unknown pins, and no type check possible).
      */
     private static NodeContract.ValueType checkPin(NodeContract contract, PinRef pin,
                                                    boolean read, List<Diagnostic> diagnostics) {
@@ -152,12 +149,10 @@ public final class SpecValidator {
                 return key.type();
             }
         }
-        if (!contract.dynamic()) {
-            diagnostics.add(new Diagnostic(Diagnostic.Severity.WARNING,
-                    "pin '" + describe(pin) + "'",
-                    read ? "is not a declared input of node '" + pin.node() + "'"
-                            : "is not a declared output of node '" + pin.node() + "'"));
-        }
+        diagnostics.add(new Diagnostic(Diagnostic.Severity.WARNING,
+                "pin '" + describe(pin) + "'",
+                read ? "is not a declared input of node '" + pin.node() + "'"
+                        : "is not a declared output of node '" + pin.node() + "'"));
         return null;
     }
 

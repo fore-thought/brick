@@ -8,6 +8,7 @@ import java.util.Set;
 import tech.forethought.brick.core.engine.EngineConfig;
 import tech.forethought.brick.core.engine.PipelineEngine;
 import tech.forethought.brick.core.engine.PipelineException;
+import tech.forethought.brick.core.event.EventKinds;
 import tech.forethought.brick.core.event.EventListener;
 import tech.forethought.brick.core.spec.PinRef;
 import tech.forethought.brick.core.spec.PipelineSpec;
@@ -42,7 +43,10 @@ import tech.forethought.brick.core.spi.Services;
  * rounds. When the body never runs, output pins take the carried values'
  * initial values; a carried output with neither initial nor injection is
  * omitted. Hitting the iteration cap throws {@link PipelineException} (loop
- * protection).
+ * protection). When the condition pin is not among the body's outputs the
+ * body can never flip it: with a truthy initial the loop certainly spins
+ * to the cap, otherwise it certainly never runs — either way a warning
+ * event is emitted and the run continues.
  *
  * <p>The nested runs re-announce every event through {@code
  * context.events()}, so observation, persistence and streaming stay
@@ -67,16 +71,19 @@ public final class LoopNode implements Node {
         try {
             var parsed = Parsed.parse(config);
             return new NodeContract(keysToAny(parsed.inputKeys()),
-                    keysToAny(parsed.exposedKeys()), true);
+                    keysToAny(parsed.exposedKeys()));
         } catch (RuntimeException e) {
             // a broken body reports precisely at execution time
-            return NodeContract.dynamicKeys();
+            return NodeContract.empty();
         }
     }
 
     @Override
     public Map<String, Object> execute(Map<String, Object> input, NodeContext context) {
         var parsed = Parsed.parse(context.config());
+        if (!parsed.exposedKeys().contains(parsed.conditionPin())) {
+            warnUnproducedCondition(context, parsed);
+        }
         var carried = new LinkedHashMap<String, Object>();
         for (var key : parsed.inputKeys()) {
             if (input.containsKey(key)) {
@@ -120,6 +127,21 @@ public final class LoopNode implements Node {
             }
         }
         return Map.copyOf(out);
+    }
+
+    /**
+     * A static tautology: the body can never flip the condition, so the loop
+     * either spins to the iteration cap or never runs. Warn on the event
+     * stream; the run continues (diagnostics, not gatekeepers).
+     */
+    private static void warnUnproducedCondition(NodeContext context, Parsed parsed) {
+        var runsUntilCap = Boolean.TRUE.equals(parsed.initial());
+        var detail = runsUntilCap
+                ? "the loop runs until maxIterations"
+                : "the body never runs";
+        context.events().emit(EventKinds.WARNING, Map.of("message",
+                "loop node: condition pin '" + parsed.conditionPin()
+                        + "' is not produced by any body output; " + detail));
     }
 
     private static List<Key> keysToAny(List<String> keys) {
@@ -178,10 +200,6 @@ public final class LoopNode implements Node {
                 if (!exposedKeys.contains(mapping.exposed())) {
                     exposedKeys.add(mapping.exposed());
                 }
-            }
-            if (!exposedKeys.contains(conditionPin)) {
-                throw new IllegalArgumentException("loop node: condition pin '" + conditionPin
-                        + "' is not produced by any body output");
             }
             return new Parsed(body, List.copyOf(inputKeys), conditionPin,
                     conditionMap.get("initial"), conditionMap.containsKey("initial"),
