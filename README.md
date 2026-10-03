@@ -6,7 +6,7 @@ This repository is the **platform repo** of the Brick project group: pure librar
 
 ## Status
 
-Early stage, actively developed: the graph-engine core, first-party node packs, an OpenAI adapter, and JSONL session persistence are in place. Latest tag: `v0.1.0`; `main` carries `0.2.0-SNAPSHOT`. Modules are top-level directories (`core/`, `nodes-basic/`, `nodes-agent/`, `ext-openai/`, `store-jsonl/`); the root `pom.xml` is the parent pom.
+Early stage, actively developed: the graph-engine core, first-party node packs, an OpenAI adapter, and JSONL session persistence are in place. Latest tag: `v0.1.0`; `main` carries `0.2.0`. Modules are top-level directories (`core/`, `nodes-basic/`, `nodes-agent/`, `ext-openai/`, `store-jsonl/`); the root `pom.xml` is the parent pom.
 
 ## Principles
 

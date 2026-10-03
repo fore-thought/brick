@@ -2,7 +2,7 @@
 
 > JSONL 会话存储：每会话一个 append-only 文件（`EventListener` 写侧 + `StateStore` 读侧）。
 
-- 坐标：`tech.forethought.brick:store-jsonl:0.2.0-SNAPSHOT`
+- 坐标：`tech.forethought.brick:store-jsonl:0.2.0`
 - 写侧：durable 事件追加为 JSON 行；瞬态事件（`token-delta`）永不落盘；持久化失败不影响运行
 - 读侧：`loadSession` 重放 `message-appended` 事件还原会话
 - 零第三方依赖（JSON 编解码用 core 的内置极简 codec）
