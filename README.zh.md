@@ -6,7 +6,7 @@
 
 ## 状态
 
-早期阶段，活跃开发中：图引擎内核、第一方节点包、OpenAI 适配器、JSONL 会话持久化已就位。最新 tag：`v0.1.0`；`main` 为 `0.2.0`。模块为顶层目录（`core/`、`nodes-basic/`、`nodes-agent/`、`ext-openai/`、`store-jsonl/`）；根 `pom.xml` 为父 pom。
+早期阶段，活跃开发中：图引擎内核、第一方节点包、OpenAI 适配器、JSONL 会话持久化已就位。最新 tag：`v0.1.0`；`main` 为 `0.3.0-SNAPSHOT`。模块为顶层目录（`core/`、`nodes-basic/`、`nodes-agent/`、`ext-openai/`、`store-jsonl/`）；根 `pom.xml` 为父 pom。
 
 ## 设计理念
 

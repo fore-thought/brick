@@ -2,7 +2,7 @@
 
 > Default agent-chain nodes and the default graph: a reference implementation of the chat agent loop.
 
-- Coordinates: `tech.forethought.brick:nodes-agent:0.2.0`
+- Coordinates: `tech.forethought.brick:nodes-agent:0.3.0-SNAPSHOT`
 - Nodes (`Node` implementations, declared via `META-INF/services`): `input`, `context-preprocess`, `convert-out`, `llm-call`, `convert-in`, `tool-exec`, `output`
 - Default graph: `DefaultSpecs.chat()` — a pure five-node outer DAG (`config` → `input` → `preprocess` → `agent-loop` → `out`); the agent loop lives inside the `agent-loop` loop container whose embedded body wires `convert` → `call` → `convert-back` → `has-tools` (branch gateway) → (`tool-exec` back in, or straight through on `false`) → `pass`. Ships as version-2 `chat.json`; run injects `input.text` plus the conversation-so-far on `input.history` (empty list on the first turn) and reads the result from `out.output`
 - Pin-name conventions live in `AgentKeys`; the model config travels as one `llm` MAP pin from a config file (loaded by config-loader) — graphs carry no credentials

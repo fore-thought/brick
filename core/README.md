@@ -2,7 +2,7 @@
 
 > Core module of the Brick AI graph engine libraries: contracts and engine.
 
-- Coordinates: `tech.forethought.brick:core:0.2.0`
+- Coordinates: `tech.forethought.brick:core:0.3.0-SNAPSHOT`
 - Contents: domain data (`model`), graph structure (`spec`), SPI contracts (`spi`: `Node` / `ProtocolAdapter` / `Tool`), the engine (`engine`), and assembly (`bootstrap`).
 - Test fixtures ship as a test-jar: SPI contract test suites and test doubles (`testkit` / `mock`), so extension modules can run the same suites against their implementations to prove replaceability.
 
